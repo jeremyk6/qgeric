@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/plugins/qgeric" >
+        <file>icon.png</file>
+        <file>resources/icon_AT.png</file>
+        <file>resources/icon_SelR.png</file>
+        <file>resources/icon_SelC.png</file>
+        <file>resources/icon_SelP.png</file>
+        <file>resources/icon_SelT.png</file>
+        <file>resources/icon_save.png</file>
+        <file>resources/icon_SelPt.png</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,21 @@
+[general]
+name=Qgeric
+qgisMinimumVersion=2.10
+description=Plugin that makes graphical queries easier.
+version=1.0
+author=Jérémy Kalsron
+email=jeremy.kalsron@gmail.com
+
+about=Plugin that makes graphical queries easier and display results in a new window with one tab per layer.
+
+tracker=https://github.com/jeremyk6/qgeric/issues
+repository=https://github.com/jeremyk6/qgeric
+
+tags=selection, buffer, query, attribute
+
+category=Plugins
+icon=icon.PNG
+
+experimental=True
+deprecated=False
+
