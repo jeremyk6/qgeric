@@ -18,8 +18,6 @@ class selectRect(QgsMapTool):
       self.rb=QgsRubberBand(self.canvas,QGis.Polygon)
       self.rb.setColor( couleur )
       self.rb.setWidth( largeur )
-      sb = self.iface.mainWindow().statusBar()
-      sb.showMessage(u"Dessiner un rectangle...")
       self.reset()
       return None
 
@@ -82,8 +80,6 @@ class selectPolygon(QgsMapTool):
       self.rb=QgsRubberBand(self.canvas,QGis.Polygon)
       self.rb.setColor( couleur )
       self.rb.setWidth( largeur )
-      sb = self.iface.mainWindow().statusBar()
-      sb.showMessage(u"clic gauche pour poser des points, click droit pour terminer la saisie")
       return None
 
   def canvasPressEvent(self,e):
@@ -115,7 +111,8 @@ class selectPolygon(QgsMapTool):
 
 class selectCircle(QgsMapTool):
   '''Outil de sélection par cercle, tiré de selectPlusFr'''
-  def __init__(self,iface, couleur, largeur, cercle):
+  def __init__(self,iface, translator, couleur, largeur, cercle):
+      self.translator = translator
       canvas = iface.mapCanvas()
       QgsMapTool.__init__(self,canvas)
       self.canvas = canvas
@@ -125,9 +122,10 @@ class selectCircle(QgsMapTool):
       self.rb=QgsRubberBand(self.canvas,QGis.Polygon)
       self.rb.setColor( couleur )
       self.rb.setWidth( largeur )
-      sb = self.iface.mainWindow().statusBar()
-      sb.showMessage(u"Placer le centre et déplacer le curseur de la souris pour fixer le rayon")
       return None
+  
+  def tr(self, message):
+        return QCoreApplication.translate('Qgeric', message)
 
   def canvasPressEvent(self,e):
       if not e.button() == Qt.LeftButton:
@@ -143,9 +141,6 @@ class selectCircle(QgsMapTool):
       # construct a circle with N segments
       cp = self.toMapCoordinates(e.pos())
       rbcircle(self.rb, self.center, cp, self.cercle)
-      r = sqrt(self.center.sqrDist(cp))
-      sb = self.iface.mainWindow().statusBar()
-      sb.showMessage(u"Centre: X=%s Y=%s, RAYON: %s m" % (str(self.center.x()),str(self.center.y()),str(r)))
       self.rb.show()
 
   def canvasReleaseEvent(self,e):
@@ -156,7 +151,7 @@ class selectCircle(QgsMapTool):
       if self.rb.numberOfVertices() > 3:
         self.emit( SIGNAL("selectionDone()") )
       else:
-        radius, ok = QInputDialog.getInt(self.iface.mainWindow(), u'Rayon', u'Entrez un rayon en m:', min=1)
+        radius, ok = QInputDialog.getInt(self.iface.mainWindow(), self.tr('Radius'), self.tr('Give a radius in m:'), min=1)
         if ok:
             cp = self.toMapCoordinates(e.pos())
             cp.setX(cp.x()+radius)
@@ -192,8 +187,6 @@ class selectLine(QgsMapTool):
       self.rb=QgsRubberBand(self.canvas,QGis.Line)
       self.rb.setColor( couleur )
       self.rb.setWidth( largeur )
-      sb = self.iface.mainWindow().statusBar()
-      sb.showMessage(u"clic gauche pour poser des points, click droit pour terminer la saisie")
       return None
 
   def canvasPressEvent(self,e):
@@ -232,8 +225,6 @@ class selectPoint(QgsMapTool):
       self.iface = iface
       self.rb=QgsRubberBand(self.canvas,QGis.Polygon)
       self.rb.setColor( couleur )
-      sb = self.iface.mainWindow().statusBar()
-      sb.showMessage(u"clic gauche pour poser un point")
       return None
 
   def canvasReleaseEvent(self,e):

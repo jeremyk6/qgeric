@@ -20,28 +20,30 @@
 import os, sys
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtGui import QPushButton, QIcon, QTableWidgetItem, QFileDialog, QToolBar, QAction, QApplication
-from PyQt4.QtCore import Qt, QSize, SIGNAL
+from PyQt4.QtCore import Qt, QSize, QTranslator, SIGNAL, QCoreApplication
 import odswriter as ods
 import resources
 
 # Display and export attributes from all active layers
 class AttributesTable(QtGui.QWidget):
-    def __init__(self):
+    def __init__(self, translator):
         QtGui.QWidget.__init__(self)
         
-        self.setWindowTitle("Table attributaire")
+        self.translator = translator
+        
+        self.setWindowTitle(self.tr('Attributes table'))
         self.resize(480,320)
         self.setMinimumSize(320,240)
         self.center()
         
         # Results export button
-        btn_saveAllTabs = QPushButton(QIcon(':/plugins/qgeric/resources/icon_save.png'), "Sauvegarder les resultats", self)
+        btn_saveAllTabs = QPushButton(QIcon(':/plugins/qgeric/resources/icon_save.png'), self.tr('Save results'), self)
         btn_saveAllTabs.clicked.connect(self.handler_saveAllAttributes)
                 
         self.tabWidget = QtGui.QTabWidget() # Tab container
         
         self.loadingWindow = QtGui.QProgressDialog()
-        self.loadingWindow.setWindowTitle('Chargement...')
+        self.loadingWindow.setWindowTitle(self.tr('Loading...'))
         self.loadingWindow.setRange(0,100)
         self.loadingWindow.setAutoClose(False)
         self.loadingWindow.setCancelButton(None)
@@ -50,6 +52,9 @@ class AttributesTable(QtGui.QWidget):
         vbox.addWidget(self.tabWidget)
         vbox.addWidget(btn_saveAllTabs)
         self.setLayout(vbox)
+    
+    def tr(self, message):
+        return QCoreApplication.translate('Qgeric', message)
     
     # Add a new tab
     def addLayer(self, title, headers, cells):
@@ -87,7 +92,7 @@ class AttributesTable(QtGui.QWidget):
         table.setHorizontalHeaderLabels(headers)
         table.setSortingEnabled(True)
         
-        btn_saveTab = QAction(QIcon(':/plugins/qgeric/resources/icon_save.png'),"Sauvegarder les resultats de cet onglet", self)
+        btn_saveTab = QAction(QIcon(':/plugins/qgeric/resources/icon_save.png'),self.tr('Save this tab\'s results'), self)
         btn_saveTab.triggered.connect(self.handler_saveAttributes)
         
         
@@ -114,7 +119,7 @@ class AttributesTable(QtGui.QWidget):
     # Save tables in OpenDocument format
     # Use odswriter library
     def saveAttributes(self, active):
-        file = QFileDialog.getSaveFileName(self, 'Enregistrer sous...','', 'Classeur OpenDocument (*.ods)')
+        file = QFileDialog.getSaveFileName(self, self.tr('Save in...'),'', self.tr('OpenDocument Spreadsheet (*.ods)'))
         if file:
             with ods.writer(open(file,"wb")) as odsfile:
                 tabs = None

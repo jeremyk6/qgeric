@@ -17,7 +17,7 @@
 #You should have received a copy of the GNU General Public License
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt4.QtCore import SIGNAL
+from PyQt4.QtCore import SIGNAL, QTranslator
 from PyQt4.QtGui import QAction, QIcon, QColor, QApplication
 
 import resources
@@ -31,10 +31,25 @@ from selectTools import *
 class Qgeric:
 
     def __init__(self, iface):
+        locale = QSettings().value('locale/userLocale')[0:2]
+        locale_path = os.path.join(
+            os.path.dirname(__file__),
+            'i18n',
+            'qgeric_{}.qm'.format(locale))
+        
+        self.translator = None
+        if os.path.exists(locale_path):
+            self.translator = QTranslator()
+            self.translator.load(locale_path)
+
+            if qVersion() > '4.3.3':
+                QCoreApplication.installTranslator(self.translator)
+                
         self.iface = iface
+        self.sb = self.iface.mainWindow().statusBar()
         self.tool = None
 
-        self.tab = AttributesTable()
+        self.tab = AttributesTable(self.translator)
         self.iface.connect(self.tab, SIGNAL("ATclose()"), self.closeAttributesTable)
 
         self.actions = []
@@ -42,7 +57,7 @@ class Qgeric:
         self.toolbar = self.iface.addToolBar('Qgeric')
         self.toolbar.setObjectName('Qgeric')
         
-        self.loadingWindow = QtGui.QProgressDialog(u'Sélection...','Passer',0,100)
+        self.loadingWindow = QtGui.QProgressDialog(self.tr('Selecting...'),self.tr('Pass'),0,100)
         self.loadingWindow.setAutoClose(False)
         
         self.themeColor = QColor(60,151,255, 128)
@@ -52,6 +67,9 @@ class Qgeric:
             self.iface.removePluginMenu('&Qgeric', action)
             self.iface.removeToolBarIcon(action)
         del self.toolbar
+        
+    def tr(self, message):
+        return QCoreApplication.translate('Qgeric', message)
 
     def add_action(
         self,
@@ -94,7 +112,7 @@ class Qgeric:
         icon_path = ':/plugins/qgeric/resources/icon_AT.png'
         self.add_action(
             icon_path,
-            text='Affiche la table attributaire de la selection',
+            text=self.tr('Display selection\'s results'),
             callback=self.showAttributesTable,
             parent=self.iface.mainWindow()
         )
@@ -102,40 +120,40 @@ class Qgeric:
         icon_path = ':/plugins/qgeric/resources/icon_SelPt.png'
         self.add_action(
             icon_path,
-            text='Outil de requete par point',
+            text=self.tr('Point request tool'),
             callback=self.pointSelection,
             parent=self.iface.mainWindow()
         )
         icon_path = ':/plugins/qgeric/resources/icon_SelR.png'
         self.add_action(
             icon_path,
-            text='Outil de requete rectangle',
+            text=self.tr('Rectangle request tool'),
             callback=self.rectangleSelection,
             parent=self.iface.mainWindow()
         )
         icon_path = ':/plugins/qgeric/resources/icon_SelC.png'
         self.add_action(
             icon_path,
-            text='Outil de requete circulaire',
+            text=self.tr('Circle request tool'),
             callback=self.circleSelection,
             parent=self.iface.mainWindow()
         )
         icon_path = ':/plugins/qgeric/resources/icon_SelP.png'
         self.add_action(
             icon_path,
-            text='Outil de requete polygonale',
+            text=self.tr('Polygon request tool'),
             callback=self.polygonSelection,
             parent=self.iface.mainWindow()
         )
         icon_path = ':/plugins/qgeric/resources/icon_SelT.png'
         self.add_action(
             icon_path,
-            text='Outil de requete par tampon',
+            text=self.tr('Buffer request tool'),
             callback=self.bufferSelection,
             parent=self.iface.mainWindow()
         )
 
-    def showAttributesTable(self):
+    def showAttributesTable(self):        
         self.tab.clear()
         
         layers = self.iface.legendInterface().layers()
@@ -162,6 +180,7 @@ class Qgeric:
         self.tool = selectPoint(self.iface, self.themeColor)
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
+        self.sb.showMessage(self.tr('Left click to place a point.'))
         
     def rectangleSelection(self):
         if self.tool:
@@ -170,14 +189,16 @@ class Qgeric:
         self.tool = selectRect(self.iface, self.themeColor, 1)
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
+        self.sb.showMessage(self.tr('Maintain the left click to draw a rectangle.'))
     
     def circleSelection(self):
         if self.tool:
             self.tool.reset()
         self.request = 'intersects'
-        self.tool = selectCircle(self.iface, self.themeColor, 1, 40) # last parameter = number of vertices
+        self.tool = selectCircle(self.iface, self.translator, self.themeColor, 1, 40) # last parameter = number of vertices
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
+        self.sb.showMessage(self.tr('Maintain the left click to draw a circle. Simple Left click to give a perimeter.'))
     
     def polygonSelection(self):
         if self.tool:
@@ -186,6 +207,7 @@ class Qgeric:
         self.tool = selectPolygon(self.iface, self.themeColor, 1)
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
+        self.sb.showMessage(self.tr('Left click to place points. Right click to confirm.'))
         
     def bufferSelection(self):
         if self.tool:
@@ -194,6 +216,7 @@ class Qgeric:
         self.tool = selectPoint(self.iface, self.themeColor)
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
+        self.sb.showMessage(self.tr('Select a vector layer in the Layer Tree, then left click on an attribute of this layer on the map.'))
     
     def geomTransform(self, geom, crs_orig, crs_dest):
         g = QgsGeometry(geom)
@@ -264,7 +287,7 @@ class Qgeric:
             for name, layer in layermaps.iteritems():
                 if layer.type() == QgsMapLayer.VectorLayer and legende.isLayerVisible(layer):
                     self.loadingWindow.reset()
-                    self.loadingWindow.setWindowTitle(u'Sélection...')
+                    self.loadingWindow.setWindowTitle(self.tr('Selecting...'))
                     self.loadingWindow.setLabelText(name)
                     
                     # rubberband reprojection
@@ -312,12 +335,12 @@ class Qgeric:
         else:
             # Display a warning in the message bar depending of the error
             if active == False:
-                self.iface.messageBar().pushMessage("Attention", "Aucune couche n'est active !", level=QgsMessageBar.WARNING, duration=3)
+                self.iface.messageBar().pushMessage(self.tr('Warning'), self.tr('There is no active layer !'), level=QgsMessageBar.WARNING, duration=3)
             elif ok == False:
                 pass
             elif errBuffer_noAtt:
-                self.iface.messageBar().pushMessage("Attention", u"Vous n'avez pas cliqué sur un attribut de la couche !", level=QgsMessageBar.WARNING, duration=3)
+                self.iface.messageBar().pushMessage(self.tr('Warning'), self.tr('You didn\'t click on a layer\'s attribute !'), level=QgsMessageBar.WARNING, duration=3)
             elif errBuffer_Vertices:
-                self.iface.messageBar().pushMessage("Attention", u"Vous devez préciser un périmètre non-nul pour un point ou une ligne !", level=QgsMessageBar.WARNING, duration=3)
+                self.iface.messageBar().pushMessage(self.tr('Warning'), self.tr('You must give a non-null value for a point\'s or line\'s perimeter !'), level=QgsMessageBar.WARNING, duration=3)
             else:
-                self.iface.messageBar().pushMessage("Attention", u"Aucune couche n'est sélectionnée, ou celle-ci n'est pas vectorielle ou n'est pas visible !", level=QgsMessageBar.WARNING, duration=3)
+                self.iface.messageBar().pushMessage(self.tr('Warning'), self.tr('There is no selected layer, or it is not vector nor visible !'), level=QgsMessageBar.WARNING, duration=3)
