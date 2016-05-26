@@ -111,8 +111,7 @@ class selectPolygon(QgsMapTool):
 
 class selectCircle(QgsMapTool):
   '''Outil de sélection par cercle, tiré de selectPlusFr'''
-  def __init__(self,iface, translator, couleur, largeur, cercle):
-      self.translator = translator
+  def __init__(self,iface, couleur, largeur, cercle):
       canvas = iface.mapCanvas()
       QgsMapTool.__init__(self,canvas)
       self.canvas = canvas

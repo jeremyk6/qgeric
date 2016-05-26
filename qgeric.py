@@ -49,7 +49,7 @@ class Qgeric:
         self.sb = self.iface.mainWindow().statusBar()
         self.tool = None
 
-        self.tab = AttributesTable(self.translator)
+        self.tab = AttributesTable()
         self.iface.connect(self.tab, SIGNAL("ATclose()"), self.closeAttributesTable)
 
         self.actions = []
@@ -195,7 +195,7 @@ class Qgeric:
         if self.tool:
             self.tool.reset()
         self.request = 'intersects'
-        self.tool = selectCircle(self.iface, self.translator, self.themeColor, 1, 40) # last parameter = number of vertices
+        self.tool = selectCircle(self.iface, self.themeColor, 1, 40) # last parameter = number of vertices
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Maintain the left click to draw a circle. Simple Left click to give a perimeter.'))

@@ -26,10 +26,8 @@ import resources
 
 # Display and export attributes from all active layers
 class AttributesTable(QtGui.QWidget):
-    def __init__(self, translator):
+    def __init__(self):
         QtGui.QWidget.__init__(self)
-        
-        self.translator = translator
         
         self.setWindowTitle(self.tr('Attributes table'))
         self.resize(480,320)
