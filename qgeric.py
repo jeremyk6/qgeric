@@ -64,7 +64,7 @@ class Qgeric:
         
     def unload(self):
         for action in self.actions:
-            self.iface.removePluginMenu('&Qgeric', action)
+            self.iface.removePluginVectorMenu('&Qgeric', action)
             self.iface.removeToolBarIcon(action)
         del self.toolbar
         
