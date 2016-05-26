@@ -55,6 +55,14 @@
         <translation>Sélectionner une couche vecteur dans la liste des couches, puis clic gauche sur un attribut de la couche sur la carte.</translation>
     </message>
     <message>
+        <source>Perimeter</source>
+        <translation>Périmètre</translation>
+    </message>
+    <message>
+        <source>Give a perimeter in m:</source>
+        <translation>Précisez un périmètre en m:</translation>
+    </message>
+    <message>
         <source>Warning</source>
         <translation>Attention</translation>
     </message>
