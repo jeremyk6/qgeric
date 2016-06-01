@@ -99,6 +99,10 @@
         <translation>Sauvegarder les résultats</translation>
     </message>
     <message>
+        <source>Zoom to selected attributes</source>
+        <translation>Zoomer sur les attributs sélectionnés</translation>
+    </message>
+    <message>
         <source>Loading...</source>
         <translation>Chargement...</translation>
     </message>

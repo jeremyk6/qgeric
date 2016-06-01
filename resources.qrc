@@ -8,5 +8,6 @@
         <file>resources/icon_SelT.png</file>
         <file>resources/icon_save.png</file>
         <file>resources/icon_SelPt.png</file>
+        <file>resources/icon_Zoom.png</file>
     </qresource>
 </RCC>

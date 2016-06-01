@@ -49,7 +49,7 @@ class Qgeric:
         self.sb = self.iface.mainWindow().statusBar()
         self.tool = None
 
-        self.tab = AttributesTable()
+        self.tab = AttributesTable(self.iface)
         self.iface.connect(self.tab, SIGNAL("ATclose()"), self.closeAttributesTable)
 
         self.actions = []
@@ -161,9 +161,10 @@ class Qgeric:
         for layer in layers:
             if layer.type() == QgsMapLayer.VectorLayer and self.iface.legendInterface().isLayerVisible(layer):
                 fields_name = [field.name() for field in layer.pendingFields()]
-                cells = [line.attributes() for line in layer.selectedFeatures()]
+                #cells = [line.attributes() for line in layer.selectedFeatures()]
+                cells = [line for line in layer.selectedFeatures()]
                 if len(cells) != 0:
-                    self.tab.addLayer(layer.name(), fields_name, cells)
+                    self.tab.addLayer(layer, fields_name, cells)
                     
         self.tab.closeLoading()
         self.tab.show()
