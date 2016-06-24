@@ -265,13 +265,12 @@ class Qgeric:
                     
                     rb.setToGeometry(union_geoms, layer)
                     
-                    perim, ok = QInputDialog.getInt(self.iface.mainWindow(), self.tr('Perimeter'), self.tr('Give a perimeter in m:'), min=0)  
-                    buffer_geom_crs = QgsCoordinateReferenceSystem(2154) # on utilise un CRS supportant le système métrique
-                    buffer_geom = self.geomTransform(union_geoms, layer.crs(), buffer_geom_crs).buffer(perim, 40) 
-                                        
-                    rb.setToGeometry(buffer_geom, QgsVectorLayer("Polygon?crs=epsg:2154","","memory"))
+                    perim, ok = QInputDialog.getInt(self.iface.mainWindow(), self.tr('Perimeter'), self.tr('Give a perimeter in m:')+'\n'+self.tr('(works only with metric crs)'), min=0)  
+                    buffer_geom_crs = layer.crs()
+                    buffer_geom = union_geoms.buffer(perim, 40)
+                    rb.setToGeometry(buffer_geom, QgsVectorLayer("Polygon?crs="+layer.crs().authid(),"","memory"))
                     
-                    if rb.numberOfVertices() <= 1:
+                    if buffer_geom.length == 0 :
                         warning = True
                         errBuffer_Vertices = True
                 else:
