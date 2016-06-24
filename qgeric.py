@@ -49,8 +49,7 @@ class Qgeric:
         self.sb = self.iface.mainWindow().statusBar()
         self.tool = None
 
-        self.tab = AttributesTable(self.iface)
-        self.iface.connect(self.tab, SIGNAL("ATclose()"), self.closeAttributesTable)
+        self.results = []
 
         self.actions = []
         self.menu = '&Qgeric'
@@ -154,26 +153,29 @@ class Qgeric:
         )
 
     def showAttributesTable(self):        
-        self.tab.clear()
+        tab = AttributesTable(self.iface)
+        self.iface.connect(tab, SIGNAL("ATclose()"), lambda tab=tab: self.closeAttributesTable(tab))
         
         layers = self.iface.legendInterface().layers()
 
         for layer in layers:
             if layer.type() == QgsMapLayer.VectorLayer and self.iface.legendInterface().isLayerVisible(layer):
                 fields_name = [field.name() for field in layer.pendingFields()]
-                #cells = [line.attributes() for line in layer.selectedFeatures()]
                 cells = [line for line in layer.selectedFeatures()]
                 if len(cells) != 0:
-                    self.tab.addLayer(layer, fields_name, cells)
+                    tab.addLayer(layer, fields_name, cells)
                     
-        self.tab.closeLoading()
-        self.tab.show()
-        self.tab.activateWindow();
-        self.tab.showNormal();
-    
-    def closeAttributesTable(self):
-        self.tool.reset()
+        tab.closeLoading()
+        tab.show()
+        tab.activateWindow();
+        tab.showNormal();
         
+        self.results.append(tab)
+        print self.results
+    
+    def closeAttributesTable(self, tab):
+        self.results.remove(tab)
+    
     def pointSelection(self):
         if self.tool:
             self.tool.reset()
