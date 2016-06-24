@@ -2,7 +2,7 @@
 name=Qgeric
 qgisMinimumVersion=2.10
 description=Plugin that makes graphical queries easier.
-version=1.0
+version=1.3
 author=Jérémy Kalsron
 email=jeremy.kalsron@gmail.com
 
