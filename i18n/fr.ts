@@ -95,12 +95,20 @@
         <translation>Précisez un rayon en m:</translation>
     </message>
     <message>
-        <source>Attributes table</source>
-        <translation>Table attributaire</translation>
+        <source>Search results</source>
+        <translation>Résultats de la recherche</translation>
     </message>
     <message>
-        <source>Save results</source>
-        <translation>Sauvegarder les résultats</translation>
+        <source>Settings</source>
+        <translation>Paramètres</translation>
+    </message>
+    <message>
+        <source>Enter a new title:</source>
+        <translation>Entrez un nouveau titre:</translation>
+    </message>
+    <message>
+        <source>Save all results</source>
+        <translation>Sauvegarder tous les résultats</translation>
     </message>
     <message>
         <source>Zoom to selected attributes</source>

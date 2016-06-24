@@ -19,7 +19,7 @@
 
 import os, sys
 from PyQt4 import QtGui, QtCore
-from PyQt4.QtGui import QPushButton, QIcon, QTableWidgetItem, QFileDialog, QToolBar, QAction, QApplication, QColor, QHeaderView
+from PyQt4.QtGui import QPushButton, QIcon, QTableWidgetItem, QFileDialog, QToolBar, QAction, QApplication, QColor, QHeaderView, QInputDialog
 from PyQt4.QtCore import Qt, QSize, QTranslator, SIGNAL, QCoreApplication
 from qgis.core import *
 from qgis.gui import *
@@ -32,14 +32,20 @@ class AttributesTable(QtGui.QWidget):
     def __init__(self, iface):
         QtGui.QWidget.__init__(self)
         
-        self.setWindowTitle(self.tr('Attributes table'))
+        self.setWindowTitle(self.tr('Search results'))
         self.resize(480,320)
         self.setMinimumSize(320,240)
         self.center()
         
         # Results export button
-        btn_saveAllTabs = QPushButton(QIcon(':/plugins/qgeric/resources/icon_save.png'), self.tr('Save results'), self)
-        btn_saveAllTabs.clicked.connect(self.handler_saveAllAttributes)
+        btn_saveTab = QAction(QIcon(':/plugins/qgeric/resources/icon_save.png'), self.tr('Save this tab\'s results'), self)
+        btn_saveTab.triggered.connect(self.handler_saveAttributes)
+        btn_saveAllTabs = QAction(QIcon(':/plugins/qgeric/resources/icon_saveAll.png'), self.tr('Save all results'), self)
+        btn_saveAllTabs.triggered.connect(self.handler_saveAllAttributes)   
+        btn_zoom = QAction(QIcon(':/plugins/qgeric/resources/icon_Zoom.png'), self.tr('Zoom to selected attributes'), self)
+        btn_zoom.triggered.connect(self.zoomToFeature) 
+        btn_rename = QAction(QIcon(':/plugins/qgeric/resources/icon_Settings.png'), self.tr('Settings'), self)
+        btn_rename.triggered.connect(self.renameWindow) 
                 
         self.tabWidget = QtGui.QTabWidget() # Tab container
         self.connect(self.tabWidget, SIGNAL("currentChanged(int)"), self.tabChanged)
@@ -54,11 +60,25 @@ class AttributesTable(QtGui.QWidget):
         iface.connect(self.canvas, SIGNAL("extentsChanged()"), self.highlight_features)
         self.highlight = []
         self.highlight_rows = []
+        
+        toolbar = QToolBar()
+        toolbar.addAction(btn_saveTab)
+        toolbar.addAction(btn_saveAllTabs)
+        toolbar.addSeparator()
+        toolbar.addAction(btn_zoom)
+        toolbar.addSeparator()
+        toolbar.addAction(btn_rename)
 
         vbox = QtGui.QVBoxLayout()
+        vbox.setContentsMargins(0,0,0,0)
+        vbox.addWidget(toolbar)
         vbox.addWidget(self.tabWidget)
-        vbox.addWidget(btn_saveAllTabs)
         self.setLayout(vbox)
+        
+    def renameWindow(self):
+        title, ok = QInputDialog.getText(self, self.tr('Rename window'), self.tr('Enter a new title:'))  
+        if ok:
+            self.setWindowTitle(title)
         
     def tabChanged(self, index):
         self.highlight_features()
@@ -100,6 +120,7 @@ class AttributesTable(QtGui.QWidget):
         tab = QtGui.QWidget()
         tab.layer = layer
         p1_vertical = QtGui.QVBoxLayout(tab)
+        p1_vertical.setContentsMargins(0,0,0,0)
         
         table = QtGui.QTableWidget();
         self.connect(table, SIGNAL("itemSelectionChanged()"), self.selectionChanged)
@@ -145,7 +166,6 @@ class AttributesTable(QtGui.QWidget):
         toolbar.addAction(btn_zoom)
         toolbar.setIconSize(QSize(18,18))
         
-        p1_vertical.addWidget(toolbar)
         p1_vertical.addWidget(table)
         
         title = table.title
