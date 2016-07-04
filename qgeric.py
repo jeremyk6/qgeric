@@ -161,9 +161,10 @@ class Qgeric:
         for layer in layers:
             if layer.type() == QgsMapLayer.VectorLayer and self.iface.legendInterface().isLayerVisible(layer):
                 fields_name = [field.name() for field in layer.pendingFields()]
-                cells = [line for line in layer.selectedFeatures()]
+                fields_type = [field.type() for field in layer.pendingFields()]
+                cells = layer.selectedFeatures()
                 if len(cells) != 0:
-                    tab.addLayer(layer, fields_name, cells)
+                    tab.addLayer(layer, fields_name, fields_type, cells)
                     
         tab.closeLoading()
         tab.show()
@@ -171,7 +172,6 @@ class Qgeric:
         tab.showNormal();
         
         self.results.append(tab)
-        print self.results
     
     def closeAttributesTable(self, tab):
         self.results.remove(tab)

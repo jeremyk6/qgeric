@@ -19,8 +19,8 @@
 
 import os, sys
 from PyQt4 import QtGui, QtCore
-from PyQt4.QtGui import QPushButton, QIcon, QTableWidgetItem, QFileDialog, QToolBar, QAction, QApplication, QColor, QHeaderView, QInputDialog
-from PyQt4.QtCore import Qt, QSize, QTranslator, SIGNAL, QCoreApplication
+from PyQt4.QtGui import QPushButton, QIcon, QTableWidgetItem, QFileDialog, QToolBar, QAction, QApplication, QColor, QHeaderView, QInputDialog, QComboBox, QLineEdit, QMenu, QWidgetAction
+from PyQt4.QtCore import Qt, QSize, QTranslator, SIGNAL, QCoreApplication, QVariant
 from qgis.core import *
 from qgis.gui import *
 from functools import partial
@@ -116,7 +116,7 @@ class AttributesTable(QtGui.QWidget):
         self.canvas.refresh() 
     
     # Add a new tab
-    def addLayer(self, layer, headers, features):
+    def addLayer(self, layer, headers, types, features):
         tab = QtGui.QWidget()
         tab.layer = layer
         p1_vertical = QtGui.QVBoxLayout(tab)
@@ -139,8 +139,8 @@ class AttributesTable(QtGui.QWidget):
             for feature in features:
                 n = 0
                 for cell in feature.attributes():
-                    cell = unicode(cell)
-                    item = QTableWidgetItem(cell)
+                    item = QTableWidgetItem()
+                    item.setData(Qt.DisplayRole, cell)
                     item.setFlags(item.flags() ^ Qt.ItemIsEditable)
                     item.feature = feature
                     table.setItem(m, n, item)
@@ -153,18 +153,19 @@ class AttributesTable(QtGui.QWidget):
             table.setRowCount(0)  
                             
         table.setHorizontalHeaderLabels(headers)
+        
+        table.types = types
+        table.filter_op = []
+        table.filters = []
+        for i in range(0, len(headers)):
+            table.filters.append('')
+            table.filter_op.append(0)
+        
+        header = table.horizontalHeader()
+        header.setContextMenuPolicy(Qt.CustomContextMenu)
+        header.customContextMenuRequested.connect(partial(self.filterMenu, table))
+            
         table.setSortingEnabled(True)
-        
-        btn_saveTab = QAction(QIcon(':/plugins/qgeric/resources/icon_save.png'),self.tr('Save this tab\'s results'), self)
-        btn_saveTab.triggered.connect(self.handler_saveAttributes)
-        
-        btn_zoom = QAction(QIcon(':/plugins/qgeric/resources/icon_Zoom.png'), self.tr('Zoom to selected attributes'), self)
-        btn_zoom.triggered.connect(self.zoomToFeature) 
-        
-        toolbar = QToolBar()
-        toolbar.addAction(btn_saveTab)
-        toolbar.addAction(btn_zoom)
-        toolbar.setIconSize(QSize(18,18))
         
         p1_vertical.addWidget(table)
         
@@ -172,9 +173,95 @@ class AttributesTable(QtGui.QWidget):
         # We reduce the title's length to 20 characters
         if len(title)>20:
             title = title[:20]+'...'
+        
+        # We add the number of elements to the tab's title.
+        title += ' ('+str(len(features))+')'
             
         self.tabWidget.addTab(tab, title) # Add the tab to the conatiner
         self.tabWidget.setTabToolTip(self.tabWidget.indexOf(tab), table.title) # Display a tooltip with the layer's full name
+     
+    def filterMenu(self, table, pos):
+        index = table.columnAt(pos.x())
+        menu = QMenu()
+        filter_operation = QComboBox()
+        if table.types[index] in [10, 14, 15, 16]:
+            filter_operation.addItems([self.tr('Contains'),self.tr('Equals')])
+        else:
+            filter_operation.addItems(['=','>','<'])
+        filter_operation.setCurrentIndex(table.filter_op[index])
+        action_filter_operation = QWidgetAction(self)
+        action_filter_operation.setDefaultWidget(filter_operation)
+        filter_value = QLineEdit(table.filters[index])
+        action_filter_value = QWidgetAction(self)
+        action_filter_value.setDefaultWidget(filter_value)
+        menu.addAction(action_filter_operation)
+        menu.addAction(action_filter_value)
+        action_filter_apply = QAction(self.tr('Apply'), self)
+        action_filter_apply.triggered.connect(partial(self.applyFilter, table, index, filter_value, filter_operation))
+        menu.addAction(action_filter_apply)
+        menu.exec_(QtGui.QCursor.pos())
+     
+    def applyFilter(self, table, index, filter_value, filter_operation):
+        table.filters[index] = filter_value.text()
+        table.filter_op[index] = filter_operation.currentIndex()
+        nb_elts = 0
+        for i in range(0, table.rowCount()):
+            table.setRowHidden(i, False)
+            nb_elts += 1
+        hidden_rows = []
+        for nb_col in range(0, table.columnCount()):
+            filtered = False
+            header = table.horizontalHeaderItem(nb_col).text()
+            if table.filters[nb_col].strip():
+                filtered = True
+                items = None
+                if table.types[nb_col] in [10, 14, 15, 16]: # If it's a string
+                    type = None
+                    if table.filter_op[nb_col] == 0: # Contain
+                        type = Qt.MatchContains
+                    if table.filter_op[nb_col] == 1: # Equal
+                        type = Qt.MatchFixedString 
+                    items = table.findItems(table.filters[nb_col], type)
+                else: # If it's a number
+                    items = []
+                    for nb_row in range(0, table.rowCount()):
+                        item = table.item(nb_row, nb_col)
+                        if item.text().strip():
+                            if table.filter_op[nb_col] == 0: # =
+                                if  float(item.text()) == float(table.filters[nb_col]):
+                                    items.append(item)
+                            if table.filter_op[nb_col] == 1: # >
+                                if  float(item.text()) > float(table.filters[nb_col]):
+                                    items.append(item)
+                            if table.filter_op[nb_col] == 2: # <
+                                if  float(item.text()) < float(table.filters[nb_col]):
+                                    items.append(item)
+                rows = []
+                for item in items:
+                    if item.column() == nb_col:
+                        rows.append(item.row())
+                for i in range(0, table.rowCount()):
+                    if i not in rows:
+                        if i not in hidden_rows:
+                            nb_elts -= 1
+                        table.setRowHidden(i, True)
+                        hidden_rows.append(i)
+            if filtered:
+                if header[len(header)-1] != '*':
+                    table.setHorizontalHeaderItem(nb_col, QTableWidgetItem(header+'*'))
+            else:
+                if header[len(header)-1] == '*':
+                    header = header[:-1]
+                    table.setHorizontalHeaderItem(nb_col, QTableWidgetItem(header))
+        
+        title = self.tabWidget.tabText(self.tabWidget.currentIndex())
+        for i in reversed(range(len(title))):
+            if title[i] == ' ':
+                break
+            title = title[:-1]
+        title += '('+str(nb_elts)+')'
+        self.tabWidget.setTabText(self.tabWidget.currentIndex(), title)
+        
         
     def selectionChanged(self):
         self.highlight_features()
@@ -213,7 +300,8 @@ class AttributesTable(QtGui.QWidget):
                         row = []
                         for j in range(0,nb_col):
                             row.append(table.item(i,j).text())
-                        sheet.writerow(row)
+                        if not table.isRowHidden(i):
+                            sheet.writerow(row)
     
     def center(self):
         screen = QtGui.QDesktopWidget().screenGeometry()

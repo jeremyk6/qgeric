@@ -130,5 +130,17 @@
         <source>OpenDocument Spreadsheet (*.ods)</source>
         <translation>Classeur OpenDocument (*.ods)</translation>
     </message>
+    <message>
+        <source>Contains</source>
+        <translation>Contient</translation>
+    </message>
+    <message>
+        <source>Equals</source>
+        <translation>Vaut</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Appliquer</translation>
+    </message>
 </context>
 </TS>
