@@ -147,7 +147,7 @@ class Qgeric:
         icon_path = ':/plugins/qgeric/resources/icon_SelT.png'
         self.add_action(
             icon_path,
-            text=self.tr('Buffer request tool'),
+            text=self.tr('Buffer request tool on the selected layer'),
             callback=self.bufferSelection,
             parent=self.iface.mainWindow()
         )

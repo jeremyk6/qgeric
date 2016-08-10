@@ -31,8 +31,8 @@
         <translation>Outil de requête par polygone</translation>
     </message>
     <message>
-        <source>Buffer request tool</source>
-        <translation>Outil de requête par tampon</translation>
+        <source>Buffer request tool on the selected layer</source>
+        <translation>Outil de requête par tampon sur la couche sélectionnée</translation>
     </message>
     <message>
         <source>Left click to place a point.</source>
