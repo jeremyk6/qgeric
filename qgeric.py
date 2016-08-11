@@ -120,6 +120,7 @@ class Qgeric:
         self.add_action(
             icon_path,
             text=self.tr('Point request tool'),
+            checkable=True,
             callback=self.pointSelection,
             parent=self.iface.mainWindow()
         )
@@ -127,6 +128,7 @@ class Qgeric:
         self.add_action(
             icon_path,
             text=self.tr('Rectangle request tool'),
+            checkable=True,
             callback=self.rectangleSelection,
             parent=self.iface.mainWindow()
         )
@@ -134,6 +136,7 @@ class Qgeric:
         self.add_action(
             icon_path,
             text=self.tr('Circle request tool'),
+            checkable=True,
             callback=self.circleSelection,
             parent=self.iface.mainWindow()
         )
@@ -141,6 +144,7 @@ class Qgeric:
         self.add_action(
             icon_path,
             text=self.tr('Polygon request tool'),
+            checkable=True,
             callback=self.polygonSelection,
             parent=self.iface.mainWindow()
         )
@@ -148,6 +152,7 @@ class Qgeric:
         self.add_action(
             icon_path,
             text=self.tr('Buffer request tool on the selected layer'),
+            checkable=True,
             callback=self.bufferSelection,
             parent=self.iface.mainWindow()
         )
@@ -181,6 +186,7 @@ class Qgeric:
             self.tool.reset()
         self.request = 'intersects'
         self.tool = selectPoint(self.iface, self.themeColor)
+        self.tool.setAction(self.actions[1])
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Left click to place a point.'))
@@ -190,6 +196,7 @@ class Qgeric:
             self.tool.reset()
         self.request = 'intersects'
         self.tool = selectRect(self.iface, self.themeColor, 1)
+        self.tool.setAction(self.actions[2])
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Maintain the left click to draw a rectangle.'))
@@ -199,6 +206,7 @@ class Qgeric:
             self.tool.reset()
         self.request = 'intersects'
         self.tool = selectCircle(self.iface, self.themeColor, 1, 40) # last parameter = number of vertices
+        self.tool.setAction(self.actions[3])
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Maintain the left click to draw a circle. Simple Left click to give a perimeter.'))
@@ -208,6 +216,7 @@ class Qgeric:
             self.tool.reset()
         self.request = 'intersects'
         self.tool = selectPolygon(self.iface, self.themeColor, 1)
+        self.tool.setAction(self.actions[4])
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Left click to place points. Right click to confirm.'))
@@ -217,6 +226,7 @@ class Qgeric:
             self.tool.reset()
         self.request = 'buffer'
         self.tool = selectPoint(self.iface, self.themeColor)
+        self.tool.setAction(self.actions[5])
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Select a vector layer in the Layer Tree, then left click on an attribute of this layer on the map.'))

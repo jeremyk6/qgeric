@@ -66,8 +66,7 @@ class selectRect(QgsMapTool):
 
   def deactivate(self):
       self.rb.reset( True )
-      #QgsMapTool.deactivate(self)
-      #self.emit(SIGNAL("deactivated()"))
+      QgsMapTool.deactivate(self)
 
 class selectPolygon(QgsMapTool):
   '''Outil de sélection par polygone, tiré de selectPlusFr'''
@@ -108,6 +107,7 @@ class selectPolygon(QgsMapTool):
 
   def deactivate(self):
     self.rb.reset( True )
+    QgsMapTool.deactivate(self)
 
 class selectCircle(QgsMapTool):
   '''Outil de sélection par cercle, tiré de selectPlusFr'''
@@ -165,6 +165,7 @@ class selectCircle(QgsMapTool):
 
   def deactivate(self):
     self.rb.reset( True )
+    QgsMapTool.deactivate(self)
 
 def rbcircle(rb,center,edgePoint,N):
     '''Fonction qui affiche une rubberband sous forme de cercle'''
@@ -214,6 +215,7 @@ class selectLine(QgsMapTool):
 
   def deactivate(self):
     self.rb.reset( QGis.Line )
+    QgsMapTool.deactivate(self)
     
 class selectPoint(QgsMapTool):
   '''Outil de sélection par polygone, tiré de selectPlusFr'''
@@ -245,3 +247,4 @@ class selectPoint(QgsMapTool):
 
   def deactivate(self):
     self.rb.reset( QGis.Polygon )
+    QgsMapTool.deactivate(self)
