@@ -103,6 +103,10 @@
         <translation>Paramètres</translation>
     </message>
     <message>
+        <source>Rename window</source>
+        <translation>Renommer la fenêtre</translation>
+    </message>
+    <message>
         <source>Enter a new title:</source>
         <translation>Entrez un nouveau titre:</translation>
     </message>
