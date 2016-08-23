@@ -48,7 +48,9 @@ class AttributesTable(QtGui.QWidget):
         btn_rename.triggered.connect(self.renameWindow) 
                 
         self.tabWidget = QtGui.QTabWidget() # Tab container
+        self.tabWidget.setTabsClosable(True)
         self.connect(self.tabWidget, SIGNAL("currentChanged(int)"), self.tabChanged)
+        self.connect(self.tabWidget, SIGNAL("tabCloseRequested(int)"), self.closeTab)
         
         self.loadingWindow = QtGui.QProgressDialog()
         self.loadingWindow.setWindowTitle(self.tr('Loading...'))
@@ -79,6 +81,10 @@ class AttributesTable(QtGui.QWidget):
         title, ok = QInputDialog.getText(self, self.tr('Rename window'), self.tr('Enter a new title:'))  
         if ok:
             self.setWindowTitle(title)
+            
+    def closeTab(self, index):
+        self.tabWidget.widget(index).deleteLater()
+        self.tabWidget.removeTab(index)
         
     def tabChanged(self, index):
         self.highlight_features()
