@@ -143,6 +143,18 @@
         <translation>Voulez vous sauvegarder les résultats ?</translation>
     </message>
     <message>
+        <source>Error</source>
+        <translation>Erreur</translation>
+    </message>
+    <message>
+        <source>The file can't be written.</source>
+        <translation>Le fichier ne peut être écrit.</translation>
+    </message>
+    <message>
+        <source>Maybe you don't have the rights or are trying to overwrite an opened file.</source>
+        <translation>Vous n'avez peut-être pas les droits ou tentez d'écraser un fichier utilisé.</translation>
+    </message>
+    <message>
         <source>Contains</source>
         <translation>Contient</translation>
     </message>

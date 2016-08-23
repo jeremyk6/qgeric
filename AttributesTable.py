@@ -277,31 +277,36 @@ class AttributesTable(QtGui.QWidget):
     def saveAttributes(self, active):
         file = QFileDialog.getSaveFileName(self, self.tr('Save in...'),'', self.tr('OpenDocument Spreadsheet (*.ods)'))
         if file:
-            with ods.writer(open(file,"wb")) as odsfile:
-                tabs = None
-                if active:
-                    tabs = self.tabWidget.currentWidget().findChildren(QtGui.QTableWidget)
-                else:
-                    tabs = self.tabWidget.findChildren(QtGui.QTableWidget)
-                for table in reversed(tabs):
-                    sheet = odsfile.new_sheet(table.title[:20]+'...') # For each tab in the container, a new sheet is created
-                    sheet.writerow([table.title]) # As the tab's title's lenght is limited, the full name of the layer is written in the first row
-                    nb_row = table.rowCount()
-                    nb_col = table.columnCount()
-                    
-                    # Fetching and writing of the table's header
-                    header = []
-                    for i in range(0,nb_col):
-                        header.append(table.horizontalHeaderItem(i).text())
-                    sheet.writerow(header)
-                    
-                    # Fetching and writing of the table's items
-                    for i in range(0,nb_row):
-                        row = []
-                        for j in range(0,nb_col):
-                            row.append(table.item(i,j).text())
-                        if not table.isRowHidden(i):
-                            sheet.writerow(row)
+            try:
+                with ods.writer(open(file,"wb")) as odsfile:
+                    tabs = None
+                    if active:
+                        tabs = self.tabWidget.currentWidget().findChildren(QtGui.QTableWidget)
+                    else:
+                        tabs = self.tabWidget.findChildren(QtGui.QTableWidget)
+                    for table in reversed(tabs):
+                        sheet = odsfile.new_sheet(table.title[:20]+'...') # For each tab in the container, a new sheet is created
+                        sheet.writerow([table.title]) # As the tab's title's lenght is limited, the full name of the layer is written in the first row
+                        nb_row = table.rowCount()
+                        nb_col = table.columnCount()
+                        
+                        # Fetching and writing of the table's header
+                        header = []
+                        for i in range(0,nb_col):
+                            header.append(table.horizontalHeaderItem(i).text())
+                        sheet.writerow(header)
+                        
+                        # Fetching and writing of the table's items
+                        for i in range(0,nb_row):
+                            row = []
+                            for j in range(0,nb_col):
+                                row.append(table.item(i,j).text())
+                            if not table.isRowHidden(i):
+                                sheet.writerow(row)
+                    return True
+            except IOError:
+                QMessageBox.critical(self, self.tr('Error'), self.tr('The file can\'t be written.')+'\n'+self.tr('Maybe you don\'t have the rights or are trying to overwrite an opened file.'))
+                return False
     
     def center(self):
         screen = QtGui.QDesktopWidget().screenGeometry()
@@ -316,9 +321,11 @@ class AttributesTable(QtGui.QWidget):
     def closeEvent(self, e):
         result = QMessageBox.question(self, self.tr("Saving ?"), self.tr("Would you like to save results before exit ?"), buttons = QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
         if result == QMessageBox.Yes:
-            self.saveAttributes(False)
-            self.clear()
-            e.accept()
+            if self.saveAttributes(False):
+                self.clear()
+                e.accept()
+            else:
+                e.ignore()
         elif result == QMessageBox.No:
             self.clear()
             e.accept()
