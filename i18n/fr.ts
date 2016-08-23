@@ -166,5 +166,9 @@
         <source>Apply</source>
         <translation>Appliquer</translation>
     </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
 </context>
 </TS>

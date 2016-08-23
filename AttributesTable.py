@@ -19,8 +19,8 @@
 
 import os, sys
 from PyQt4 import QtGui, QtCore
-from PyQt4.QtGui import QPushButton, QIcon, QTableWidgetItem, QFileDialog, QToolBar, QAction, QApplication, QColor, QHeaderView, QInputDialog, QComboBox, QLineEdit, QMenu, QWidgetAction, QMessageBox
-from PyQt4.QtCore import Qt, QSize, QTranslator, SIGNAL, QCoreApplication, QVariant
+from PyQt4.QtGui import QPushButton, QIcon, QTableWidgetItem, QFileDialog, QToolBar, QAction, QApplication, QColor, QHeaderView, QInputDialog, QComboBox, QLineEdit, QMenu, QWidgetAction, QMessageBox, QDateEdit, QTimeEdit, QDateTimeEdit
+from PyQt4.QtCore import Qt, QSize, QDate, QTime, QDateTime, QTranslator, SIGNAL, QCoreApplication, QVariant
 from qgis.core import *
 from qgis.gui import *
 from functools import partial
@@ -190,25 +190,54 @@ class AttributesTable(QtGui.QWidget):
         index = table.columnAt(pos.x())
         menu = QMenu()
         filter_operation = QComboBox()
-        if table.types[index] in [10, 14, 15, 16]:
+        if table.types[index] in [10]:
             filter_operation.addItems([self.tr('Contains'),self.tr('Equals')])
         else:
             filter_operation.addItems(['=','>','<'])
         filter_operation.setCurrentIndex(table.filter_op[index])
         action_filter_operation = QWidgetAction(self)
         action_filter_operation.setDefaultWidget(filter_operation)
-        filter_value = QLineEdit(table.filters[index])
+        if table.types[index] in [14]:
+            if not isinstance(table.filters[index], QDate):
+                filter_value = QDateEdit()
+            else:
+                filter_value = QDateEdit(table.filters[index])
+        elif table.types[index] in [15]:
+            if not isinstance(table.filters[index], QTime):
+                filter_value = QTimeEdit()
+            else:
+                filter_value = QTimeEdit(table.filters[index])
+        elif table.types[index] in [16]:
+            if not isinstance(table.filters[index], QDateTime):
+                filter_value = QDateTimeEdit()
+            else:
+                filter_value = QDateTimeEdit(table.filters[index])
+        else:
+            filter_value = QLineEdit(table.filters[index])
         action_filter_value = QWidgetAction(self)
         action_filter_value.setDefaultWidget(filter_value)
         menu.addAction(action_filter_operation)
         menu.addAction(action_filter_value)
         action_filter_apply = QAction(self.tr('Apply'), self)
         action_filter_apply.triggered.connect(partial(self.applyFilter, table, index, filter_value, filter_operation))
+        action_filter_cancel = QAction(self.tr('Cancel'), self)
+        action_filter_cancel.triggered.connect(partial(self.applyFilter, table, index, None, filter_operation))
         menu.addAction(action_filter_apply)
+        menu.addAction(action_filter_cancel)
         menu.exec_(QtGui.QCursor.pos())
      
     def applyFilter(self, table, index, filter_value, filter_operation):
-        table.filters[index] = filter_value.text()
+        if filter_value == None:
+            table.filters[index] = None
+        else:
+            if isinstance(filter_value, QDateEdit):
+                table.filters[index] = filter_value.date()
+            elif isinstance(filter_value, QTimeEdit):
+                table.filters[index] = filter_value.time()
+            elif isinstance(filter_value, QDateTimeEdit):
+                table.filters[index] = filter_value.dateTime()
+            else:
+                table.filters[index] = filter_value.text()
         table.filter_op[index] = filter_operation.currentIndex()
         nb_elts = 0
         for i in range(0, table.rowCount()):
@@ -218,16 +247,36 @@ class AttributesTable(QtGui.QWidget):
         for nb_col in range(0, table.columnCount()):
             filtered = False
             header = table.horizontalHeaderItem(nb_col).text()
-            if table.filters[nb_col].strip():
+            valid = False
+            if table.filters[nb_col] is not None:
+                if  type(table.filters[nb_col]) in [QDate, QTime, QDateTime]:
+                    valid = True
+                else:
+                    if table.filters[nb_col].strip():
+                        valid = True
+            if valid:
                 filtered = True
                 items = None
-                if table.types[nb_col] in [10, 14, 15, 16]: # If it's a string
-                    type = None
+                if table.types[nb_col] in [10]:# If it's a string
+                    filter_type = None
                     if table.filter_op[nb_col] == 0: # Contain
-                        type = Qt.MatchContains
+                        filter_type = Qt.MatchContains
                     if table.filter_op[nb_col] == 1: # Equal
-                        type = Qt.MatchFixedString 
-                    items = table.findItems(table.filters[nb_col], type)
+                        filter_type = Qt.MatchFixedString 
+                    items = table.findItems(table.filters[nb_col], filter_type)
+                elif table.types[nb_col] in [14, 15, 16]: # If it's a date/time
+                    items = []
+                    for nb_row in range(0, table.rowCount()):
+                        item = table.item(nb_row, nb_col)
+                        if table.filter_op[nb_col] == 0: # =
+                            if  item.data(QTableWidgetItem.Type) == table.filters[nb_col]:
+                                items.append(item)
+                        if table.filter_op[nb_col] == 1: # >
+                            if  item.data(QTableWidgetItem.Type) > table.filters[nb_col]:
+                                items.append(item)
+                        if table.filter_op[nb_col] == 2: # <
+                            if  item.data(QTableWidgetItem.Type) < table.filters[nb_col]:
+                                items.append(item)
                 else: # If it's a number
                     items = []
                     for nb_row in range(0, table.rowCount()):
