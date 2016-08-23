@@ -131,6 +131,14 @@
         <translation>Classeur OpenDocument (*.ods)</translation>
     </message>
     <message>
+        <source>Saving ?</source>
+        <translation>Sauvegarder ?</translation>
+    </message>
+    <message>
+        <source>Would you like to save results before exit ?</source>
+        <translation>Voulez vous sauvegarder les résultats ?</translation>
+    </message>
+    <message>
         <source>Contains</source>
         <translation>Contient</translation>
     </message>

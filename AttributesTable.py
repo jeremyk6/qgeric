@@ -19,7 +19,7 @@
 
 import os, sys
 from PyQt4 import QtGui, QtCore
-from PyQt4.QtGui import QPushButton, QIcon, QTableWidgetItem, QFileDialog, QToolBar, QAction, QApplication, QColor, QHeaderView, QInputDialog, QComboBox, QLineEdit, QMenu, QWidgetAction
+from PyQt4.QtGui import QPushButton, QIcon, QTableWidgetItem, QFileDialog, QToolBar, QAction, QApplication, QColor, QHeaderView, QInputDialog, QComboBox, QLineEdit, QMenu, QWidgetAction, QMessageBox
 from PyQt4.QtCore import Qt, QSize, QTranslator, SIGNAL, QCoreApplication, QVariant
 from qgis.core import *
 from qgis.gui import *
@@ -314,9 +314,16 @@ class AttributesTable(QtGui.QWidget):
             table.setParent(None)
         
     def closeEvent(self, e):
-        self.clear()
-        self.emit(SIGNAL("ATclose()"))
-        e.accept()
+        result = QMessageBox.question(self, self.tr("Saving ?"), self.tr("Would you like to save results before exit ?"), buttons = QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+        if result == QMessageBox.Yes:
+            self.saveAttributes(False)
+            self.clear()
+            e.accept()
+        elif result == QMessageBox.No:
+            self.clear()
+            e.accept()
+        else:
+            e.ignore()
         
     def closeLoading(self):
         self.loadingWindow.close()
