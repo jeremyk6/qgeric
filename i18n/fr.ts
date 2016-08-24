@@ -170,5 +170,21 @@
         <source>Cancel</source>
         <translation>Annuler</translation>
     </message>
+    <message>
+        <source>Layer name</source>
+        <translation>Nom de la couche</translation>
+    </message>
+    <message>
+        <source>Give a name to the layer:</source>
+        <translation>Donnez un nom à la couche:</translation>
+    </message>
+    <message>
+        <source>Export the selection as a memory layer</source>
+        <translation>Exporter la sélection comme couche mémoire</translation>
+    </message>
+    <message>
+        <source>There is no selected feature !</source>
+        <translation>Il n'y a aucune entité sélectionnée</translation>
+    </message>
 </context>
 </TS>

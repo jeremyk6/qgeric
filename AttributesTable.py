@@ -42,6 +42,8 @@ class AttributesTable(QtGui.QWidget):
         btn_saveTab.triggered.connect(self.handler_saveAttributes)
         btn_saveAllTabs = QAction(QIcon(':/plugins/qgeric/resources/icon_saveAll.png'), self.tr('Save all results'), self)
         btn_saveAllTabs.triggered.connect(self.handler_saveAllAttributes)   
+        btn_export = QAction(QIcon(':/plugins/qgeric/resources/icon_export.png'), self.tr('Export the selection as a memory layer'), self)
+        btn_export.triggered.connect(self.exportLayer)
         btn_zoom = QAction(QIcon(':/plugins/qgeric/resources/icon_Zoom.png'), self.tr('Zoom to selected attributes'), self)
         btn_zoom.triggered.connect(self.zoomToFeature) 
         btn_rename = QAction(QIcon(':/plugins/qgeric/resources/icon_Settings.png'), self.tr('Settings'), self)
@@ -66,6 +68,7 @@ class AttributesTable(QtGui.QWidget):
         toolbar = QToolBar()
         toolbar.addAction(btn_saveTab)
         toolbar.addAction(btn_saveAllTabs)
+        toolbar.addAction(btn_export)
         toolbar.addSeparator()
         toolbar.addAction(btn_zoom)
         toolbar.addSeparator()
@@ -76,6 +79,8 @@ class AttributesTable(QtGui.QWidget):
         vbox.addWidget(toolbar)
         vbox.addWidget(self.tabWidget)
         self.setLayout(vbox)
+        
+        self.mb = iface.messageBar()
         
     def renameWindow(self):
         title, ok = QInputDialog.getText(self, self.tr('Rename window'), self.tr('Enter a new title:'))  
@@ -88,6 +93,36 @@ class AttributesTable(QtGui.QWidget):
         
     def tabChanged(self, index):
         self.highlight_features()
+        
+    def exportLayer(self):
+        if self.tabWidget.count() != 0:
+            index = self.tabWidget.currentIndex()
+            table = self.tabWidget.widget(index).findChildren(QtGui.QTableWidget)[0]
+            items = table.selectedItems()
+            if len(items) > 0:
+                type = ''
+                if items[0].feature.geometry().type() == QGis.Point:
+                    type = 'Point'
+                elif items[0].feature.geometry().type() == QGis.Line:
+                    type = 'LineString'
+                else:
+                    type = 'Polygon'
+                features = []
+                for item in items:
+                    features.append(item.feature)
+                name = ''
+                ok = True
+                while not name.strip() and ok == True:
+                    name, ok = QInputDialog.getText(self, self.tr('Layer name'), self.tr('Give a name to the layer:'))
+                if ok:
+                    layer = QgsVectorLayer(type+"?crs="+table.crs.authid(),name,"memory")
+                    layer.startEditing()
+                    layer.dataProvider().addFeatures(features)
+                    layer.dataProvider().addAttributes(features[0].fields().toList())
+                    layer.commitChanges()
+                    QgsMapLayerRegistry.instance().addMapLayer(layer)
+            else:
+                self.mb.pushMessage(self.tr('Warning'), self.tr('There is no selected feature !'), level=QgsMessageBar.WARNING, duration=3)
         
     def highlight_features(self):
         del self.highlight[:]
@@ -131,6 +166,7 @@ class AttributesTable(QtGui.QWidget):
         table = QtGui.QTableWidget();
         self.connect(table, SIGNAL("itemSelectionChanged()"), self.selectionChanged)
         table.title = layer.name()
+        table.crs = layer.crs()
         table.setColumnCount(len(headers))
         if len(features) > 0:
             table.setRowCount(len(features))
