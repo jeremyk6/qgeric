@@ -35,6 +35,10 @@
         <translation>Outil de requête par tampon sur la couche sélectionnée</translation>
     </message>
     <message>
+        <source>Polygon buffer request tool on the selected layer</source>
+        <translation>Outil de requête par tampon avec sélection polygone sur la couche sélectionnée</translation>
+    </message>
+    <message>
         <source>Left click to place a point.</source>
         <translation>Clic droit pour placer un point.</translation>
     </message>

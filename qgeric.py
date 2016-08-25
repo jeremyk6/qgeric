@@ -156,6 +156,14 @@ class Qgeric:
             callback=self.bufferSelection,
             parent=self.iface.mainWindow()
         )
+        icon_path = ':/plugins/qgeric/resources/icon_SelTP.png'
+        self.add_action(
+            icon_path,
+            text=self.tr('Polygon buffer request tool on the selected layer'),
+            checkable=True,
+            callback=self.polygonBufferSelection,
+            parent=self.iface.mainWindow()
+        )
 
     def showAttributesTable(self):        
         tab = AttributesTable(self.iface)
@@ -230,6 +238,16 @@ class Qgeric:
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Select a vector layer in the Layer Tree, then left click on an attribute of this layer on the map.'))
+        
+    def polygonBufferSelection(self):
+        if self.tool:
+            self.tool.reset()
+        self.request = 'buffer'
+        self.tool = selectPolygon(self.iface, self.themeColor, 1)
+        self.tool.setAction(self.actions[6])
+        self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
+        self.iface.mapCanvas().setMapTool(self.tool)
+        self.sb.showMessage(self.tr('Left click to place points. Right click to confirm.'))
     
     def geomTransform(self, geom, crs_orig, crs_dest):
         g = QgsGeometry(geom)
