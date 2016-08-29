@@ -316,6 +316,9 @@ class Qgeric:
             self.loadingWindow.showNormal();
             for name, layer in layermaps.iteritems():
                 if layer.type() == QgsMapLayer.VectorLayer and legende.isLayerVisible(layer):
+                    if self.request == 'buffer' and self.iface.legendInterface().currentLayer() == layer:
+                        layer.setSelectedFeatures([])
+                        continue
                     self.loadingWindow.reset()
                     self.loadingWindow.setWindowTitle(self.tr('Selecting...'))
                     self.loadingWindow.setLabelText(name)
@@ -342,12 +345,8 @@ class Qgeric:
                     for feature in features:
                         geom = feature.geometry()
                         try:
-                            if self.request == 'intersects':
-                                if g.intersects(geom):
-                                    feat_id.append(feature.id())
-                            if self.request == 'buffer':
-                                if g.intersects(geom) and self.iface.legendInterface().currentLayer() != layer:
-                                    feat_id.append(feature.id())
+                            if g.intersects(geom):
+                                feat_id.append(feature.id())
                         except:
                             # There's an error but it intersects
                             print 'error with '+name+' on '+str(feature.id())
