@@ -109,7 +109,8 @@ class AttributesTable(QtGui.QWidget):
                     type = 'Polygon'
                 features = []
                 for item in items:
-                    features.append(item.feature)
+                    if item.feature not in features:
+                        features.append(item.feature)
                 name = ''
                 ok = True
                 while not name.strip() and ok == True:
