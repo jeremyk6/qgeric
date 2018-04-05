@@ -190,5 +190,17 @@
         <source>There is no selected feature !</source>
         <translation>Il n'y a aucune entité sélectionnée</translation>
     </message>
+    <message>
+        <source>Length</source>
+        <translation>Longueur</translation>
+    </message>
+    <message>
+        <source>Area</source>
+        <translation>Surface</translation>
+    </message>
+    <message>
+        <source>Selected features</source>
+        <translation>Éléments sélectionnés</translation>
+    </message>
 </context>
 </TS>

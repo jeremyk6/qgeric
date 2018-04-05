@@ -129,8 +129,12 @@ class AttributesTable(QtGui.QWidget):
         del self.highlight[:]
         del self.highlight_rows[:]
         index = self.tabWidget.currentIndex()
+        tab = self.tabWidget.widget(index)
         if self.tabWidget.count() != 0:
             table = self.tabWidget.widget(index).findChildren(QtGui.QTableWidget)[0]
+            nb = 0
+            area = 0
+            length = 0
             items = table.selectedItems()
             for item in items:
                 highlight = QgsHighlight(self.canvas, item.feature.geometry().centroid(), self.tabWidget.widget(index).layer)
@@ -138,7 +142,17 @@ class AttributesTable(QtGui.QWidget):
                 if item.row() not in self.highlight_rows:
                     self.highlight.append(highlight)
                     self.highlight_rows.append(item.row())
-            
+                    g = QgsGeometry(item.feature.geometry())
+                    g.transform(QgsCoordinateTransform(tab.layer.crs(), QgsCoordinateReferenceSystem(2154))) # geometry reprojection to get meters
+                    nb += 1
+                    area += g.area()
+                    length += g.length()
+            if tab.layer.wkbType()==QGis.WKBPolygon:
+                tab.sb.showMessage(self.tr('Selected features')+': '+str(nb)+'  '+self.tr('Area')+': '+"%.2f"%area+'m2')
+            elif tab.layer.wkbType()==QGis.WKBLineString:
+                tab.sb.showMessage(self.tr('Selected features')+': '+str(nb)+'  '+self.tr('Length')+': '+"%.2f"%length+'m')
+            else:
+                tab.sb.showMessage(self.tr('Selected features')+': '+str(nb))
     
     def tr(self, message):
         return QCoreApplication.translate('Qgeric', message)
@@ -211,6 +225,10 @@ class AttributesTable(QtGui.QWidget):
         table.setSortingEnabled(True)
         
         p1_vertical.addWidget(table)
+        
+        # Status bar to display informations (ie: area)
+        tab.sb = QtGui.QStatusBar()
+        p1_vertical.addWidget(tab.sb)
         
         title = table.title
         # We reduce the title's length to 20 characters
