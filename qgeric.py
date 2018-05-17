@@ -81,6 +81,7 @@ class Qgeric:
         add_to_toolbar=True,
         status_tip=None,
         whats_this=None,
+        menu=None,
         parent=None):
 
         icon = QIcon(icon_path)
@@ -94,6 +95,9 @@ class Qgeric:
 
         if whats_this is not None:
             action.setWhatsThis(whats_this)
+
+        if menu is not None:
+            action.setMenu(menu)
 
         if add_to_toolbar:
             self.toolbar.addAction(action)
@@ -148,20 +152,17 @@ class Qgeric:
             callback=self.polygonSelection,
             parent=self.iface.mainWindow()
         )
+        bufferMenu = QMenu()
+        polygonBufferAction = QAction(QIcon(':/plugins/qgeric/resources/icon_SelTP.png'), self.tr('Polygon buffer request tool on the selected layer'), bufferMenu)
+        polygonBufferAction.triggered.connect(self.polygonBufferSelection)
+        bufferMenu.addAction(polygonBufferAction)
         icon_path = ':/plugins/qgeric/resources/icon_SelT.png'
         self.add_action(
             icon_path,
             text=self.tr('Buffer request tool on the selected layer'),
             checkable=True,
+            menu=bufferMenu,
             callback=self.bufferSelection,
-            parent=self.iface.mainWindow()
-        )
-        icon_path = ':/plugins/qgeric/resources/icon_SelTP.png'
-        self.add_action(
-            icon_path,
-            text=self.tr('Polygon buffer request tool on the selected layer'),
-            checkable=True,
-            callback=self.polygonBufferSelection,
             parent=self.iface.mainWindow()
         )
 
@@ -234,6 +235,14 @@ class Qgeric:
             self.tool.reset()
         self.request = 'buffer'
         self.tool = selectPoint(self.iface, self.themeColor)
+        self.actions[5].setIcon(QIcon(':/plugins/qgeric/resources/icon_SelT.png'))
+        self.actions[5].setText(self.tr('Buffer request tool on the selected layer'))
+        self.actions[5].triggered.disconnect()
+        self.actions[5].triggered.connect(self.bufferSelection)
+        self.actions[5].menu().actions()[0].setIcon(QIcon(':/plugins/qgeric/resources/icon_SelTP.png'))
+        self.actions[5].menu().actions()[0].setText(self.tr('Polygon buffer request tool on the selected layer'))
+        self.actions[5].menu().actions()[0].triggered.disconnect()
+        self.actions[5].menu().actions()[0].triggered.connect(self.polygonBufferSelection)
         self.tool.setAction(self.actions[5])
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
@@ -244,7 +253,15 @@ class Qgeric:
             self.tool.reset()
         self.request = 'buffer'
         self.tool = selectPolygon(self.iface, self.themeColor, 1)
-        self.tool.setAction(self.actions[6])
+        self.actions[5].setIcon(QIcon(':/plugins/qgeric/resources/icon_SelTP.png'))
+        self.actions[5].setText(self.tr('Polygon buffer request tool on the selected layer'))
+        self.actions[5].triggered.disconnect()
+        self.actions[5].triggered.connect(self.polygonBufferSelection)
+        self.actions[5].menu().actions()[0].setIcon(QIcon(':/plugins/qgeric/resources/icon_SelT.png'))
+        self.actions[5].menu().actions()[0].setText(self.tr('Buffer request tool on the selected layer'))
+        self.actions[5].menu().actions()[0].triggered.disconnect()
+        self.actions[5].menu().actions()[0].triggered.connect(self.bufferSelection)
+        self.tool.setAction(self.actions[5])
         self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Left click to place points. Right click to confirm.'))
