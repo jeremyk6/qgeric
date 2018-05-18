@@ -202,5 +202,13 @@
         <source>Selected features</source>
         <translation>Éléments sélectionnés</translation>
     </message>
+    <message>
+        <source>Highlight feature's centroid</source>
+        <translation>Mettre en surbrillance le centroide</translation>
+    </message>
+    <message>
+        <source>Highlight feature's geometry</source>
+        <translation>Mettre en surbrillance la géométrie</translation>
+    </message>
 </context>
 </TS>

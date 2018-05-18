@@ -38,16 +38,18 @@ class AttributesTable(QtGui.QWidget):
         self.center()
         
         # Results export button
-        btn_saveTab = QAction(QIcon(':/plugins/qgeric/resources/icon_save.png'), self.tr('Save this tab\'s results'), self)
-        btn_saveTab.triggered.connect(self.handler_saveAttributes)
-        btn_saveAllTabs = QAction(QIcon(':/plugins/qgeric/resources/icon_saveAll.png'), self.tr('Save all results'), self)
-        btn_saveAllTabs.triggered.connect(self.handler_saveAllAttributes)   
-        btn_export = QAction(QIcon(':/plugins/qgeric/resources/icon_export.png'), self.tr('Export the selection as a memory layer'), self)
-        btn_export.triggered.connect(self.exportLayer)
-        btn_zoom = QAction(QIcon(':/plugins/qgeric/resources/icon_Zoom.png'), self.tr('Zoom to selected attributes'), self)
-        btn_zoom.triggered.connect(self.zoomToFeature) 
-        btn_rename = QAction(QIcon(':/plugins/qgeric/resources/icon_Settings.png'), self.tr('Settings'), self)
-        btn_rename.triggered.connect(self.renameWindow) 
+        self.btn_saveTab = QAction(QIcon(':/plugins/qgeric/resources/icon_save.png'), self.tr('Save this tab\'s results'), self)
+        self.btn_saveTab.triggered.connect(self.handler_saveAttributes)
+        self.btn_saveAllTabs = QAction(QIcon(':/plugins/qgeric/resources/icon_saveAll.png'), self.tr('Save all results'), self)
+        self.btn_saveAllTabs.triggered.connect(self.handler_saveAllAttributes)
+        self.btn_export = QAction(QIcon(':/plugins/qgeric/resources/icon_export.png'), self.tr('Export the selection as a memory layer'), self)
+        self.btn_export.triggered.connect(self.exportLayer)
+        self.btn_zoom = QAction(QIcon(':/plugins/qgeric/resources/icon_Zoom.png'), self.tr('Zoom to selected attributes'), self)
+        self.btn_zoom.triggered.connect(self.zoomToFeature)
+        self.btn_selectGeom = QAction(QIcon(':/plugins/qgeric/resources/icon_HlG.png'), self.tr('Highlight feature\'s geometry'), self)
+        self.btn_selectGeom.triggered.connect(self.selectGeomChanged)
+        self.btn_rename = QAction(QIcon(':/plugins/qgeric/resources/icon_Settings.png'), self.tr('Settings'), self)
+        self.btn_rename.triggered.connect(self.renameWindow)
                 
         self.tabWidget = QtGui.QTabWidget() # Tab container
         self.tabWidget.setTabsClosable(True)
@@ -66,13 +68,14 @@ class AttributesTable(QtGui.QWidget):
         self.highlight_rows = []
         
         toolbar = QToolBar()
-        toolbar.addAction(btn_saveTab)
-        toolbar.addAction(btn_saveAllTabs)
-        toolbar.addAction(btn_export)
+        toolbar.addAction(self.btn_saveTab)
+        toolbar.addAction(self.btn_saveAllTabs)
+        toolbar.addAction(self.btn_export)
         toolbar.addSeparator()
-        toolbar.addAction(btn_zoom)
+        toolbar.addAction(self.btn_zoom)
         toolbar.addSeparator()
-        toolbar.addAction(btn_rename)
+        toolbar.addAction(self.btn_selectGeom)
+        toolbar.addAction(self.btn_rename)
 
         vbox = QtGui.QVBoxLayout()
         vbox.setContentsMargins(0,0,0,0)
@@ -82,6 +85,8 @@ class AttributesTable(QtGui.QWidget):
         
         self.mb = iface.messageBar()
         
+        self.selectGeom = False # False for point, True for geometry
+
     def renameWindow(self):
         title, ok = QInputDialog.getText(self, self.tr('Rename window'), self.tr('Enter a new title:'))  
         if ok:
@@ -94,6 +99,17 @@ class AttributesTable(QtGui.QWidget):
     def tabChanged(self, index):
         self.highlight_features()
         
+    def selectGeomChanged(self):
+        if self.selectGeom:
+            self.selectGeom = False
+            self.btn_selectGeom.setText(self.tr('Highlight feature\'s geometry'))
+            self.btn_selectGeom.setIcon(QIcon(':/plugins/qgeric/resources/icon_HlG.png'))
+        else:
+            self.selectGeom = True
+            self.btn_selectGeom.setText(self.tr('Highlight feature\'s centroid'))
+            self.btn_selectGeom.setIcon(QIcon(':/plugins/qgeric/resources/icon_HlC.png'))
+        self.highlight_features()
+
     def exportLayer(self):
         if self.tabWidget.count() != 0:
             index = self.tabWidget.currentIndex()
@@ -137,7 +153,10 @@ class AttributesTable(QtGui.QWidget):
             length = 0
             items = table.selectedItems()
             for item in items:
-                highlight = QgsHighlight(self.canvas, item.feature.geometry().centroid(), self.tabWidget.widget(index).layer)
+                if self.selectGeom:
+                    highlight = QgsHighlight(self.canvas, item.feature.geometry(), self.tabWidget.widget(index).layer)
+                else:
+                    highlight = QgsHighlight(self.canvas, item.feature.geometry().centroid(), self.tabWidget.widget(index).layer)
                 highlight.setColor(QColor(255,0,0))
                 if item.row() not in self.highlight_rows:
                     self.highlight.append(highlight)
