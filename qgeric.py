@@ -312,7 +312,7 @@ class Qgeric:
                     
                     rb.setToGeometry(union_geoms, layer)
                     
-                    perim, ok = QInputDialog.getInt(self.iface.mainWindow(), self.tr('Perimeter'), self.tr('Give a perimeter in m:')+'\n'+self.tr('(works only with metric crs)'), min=0)  
+                    perim, ok = QInputDialog.getDouble(self.iface.mainWindow(), self.tr('Perimeter'), self.tr('Give a perimeter in m:')+'\n'+self.tr('(works only with metric crs)'), min=0)
                     buffer_geom_crs = layer.crs()
                     buffer_geom = union_geoms.buffer(perim, 40)
                     rb.setToGeometry(buffer_geom, QgsVectorLayer("Polygon?crs="+layer.crs().authid(),"","memory"))
