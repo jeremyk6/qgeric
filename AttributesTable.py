@@ -167,9 +167,9 @@ class AttributesTable(QtGui.QWidget):
                     area += g.area()
                     length += g.length()
             if tab.layer.wkbType()==QGis.WKBPolygon:
-                tab.sb.showMessage(self.tr('Selected features')+': '+str(nb)+'  '+self.tr('Area')+': '+"%.2f"%area+'m2')
+                tab.sb.showMessage(self.tr('Selected features')+': '+str(nb)+'  '+self.tr('Area')+': '+"%.2f"%area+' m'+u'²')
             elif tab.layer.wkbType()==QGis.WKBLineString:
-                tab.sb.showMessage(self.tr('Selected features')+': '+str(nb)+'  '+self.tr('Length')+': '+"%.2f"%length+'m')
+                tab.sb.showMessage(self.tr('Selected features')+': '+str(nb)+'  '+self.tr('Length')+': '+"%.2f"%length+' m')
             else:
                 tab.sb.showMessage(self.tr('Selected features')+': '+str(nb))
     
