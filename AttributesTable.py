@@ -229,6 +229,7 @@ class AttributesTable(QtGui.QWidget):
             table.setRowCount(0)  
                             
         table.setHorizontalHeaderLabels(headers)
+        table.horizontalHeader().setMovable(True)
         
         table.types = types
         table.filter_op = []
