@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Qgeric: plugin that makes graphical queries easier.
+# Qgeric: Graphical queries by drawing simple shapes.
 # Author: Jérémy Kalsron
 #         jeremy.kalsron@gmail.com
 #
@@ -14,19 +14,19 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-#You should have received a copy of the GNU General Public License
-#along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt4.QtCore import SIGNAL, QTranslator
-from PyQt4.QtGui import QAction, QIcon, QColor, QApplication
+from qgis.PyQt.QtCore import QTranslator, qVersion
+from qgis.PyQt.QtGui import QIcon, QColor
+from qgis.PyQt.QtWidgets import QAction, QApplication, QProgressDialog
 
-import resources
+from . import resources
 
-from qgis.core import *
-from qgis.gui import *
+from qgis.core import QgsProject, QgsMapLayer, QgsGeometry, QgsCoordinateTransform, QgsFeatureRequest, QgsVectorLayer
 
-from AttributesTable import *
-from selectTools import *
+from .AttributesTable import *
+from .selectTools import *
 
 class Qgeric:
 
@@ -56,8 +56,9 @@ class Qgeric:
         self.toolbar = self.iface.addToolBar('Qgeric')
         self.toolbar.setObjectName('Qgeric')
         
-        self.loadingWindow = QtGui.QProgressDialog(self.tr('Selecting...'),self.tr('Pass'),0,100)
+        self.loadingWindow = QProgressDialog(self.tr('Selecting...'),self.tr('Pass'),0,100)
         self.loadingWindow.setAutoClose(False)
+        self.loadingWindow.close()
         
         self.themeColor = QColor(60,151,255, 128)
         
@@ -168,14 +169,13 @@ class Qgeric:
 
     def showAttributesTable(self):        
         tab = AttributesTable(self.iface)
-        self.iface.connect(tab, SIGNAL("ATclose()"), lambda tab=tab: self.closeAttributesTable(tab))
-        
-        layers = self.iface.legendInterface().layers()
+
+        layers = QgsProject().instance().mapLayers().values()
 
         for layer in layers:
-            if layer.type() == QgsMapLayer.VectorLayer and self.iface.legendInterface().isLayerVisible(layer):
-                fields_name = [field.name() for field in layer.pendingFields()]
-                fields_type = [field.type() for field in layer.pendingFields()]
+            if layer.type() == QgsMapLayer.VectorLayer and QgsProject.instance().layerTreeRoot().findLayer(layer.id()).isVisible():
+                fields_name = [field.name() for field in layer.fields()]
+                fields_type = [field.type() for field in layer.fields()]
                 cells = layer.selectedFeatures()
                 if len(cells) != 0:
                     tab.addLayer(layer, fields_name, fields_type, cells)
@@ -196,7 +196,7 @@ class Qgeric:
         self.request = 'intersects'
         self.tool = selectPoint(self.iface, self.themeColor)
         self.tool.setAction(self.actions[1])
-        self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
+        self.tool.selectionDone.connect(self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Left click to place a point.'))
         
@@ -206,7 +206,7 @@ class Qgeric:
         self.request = 'intersects'
         self.tool = selectRect(self.iface, self.themeColor, 1)
         self.tool.setAction(self.actions[2])
-        self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
+        self.tool.selectionDone.connect(self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Maintain the left click to draw a rectangle.'))
     
@@ -216,7 +216,7 @@ class Qgeric:
         self.request = 'intersects'
         self.tool = selectCircle(self.iface, self.themeColor, 1, 40) # last parameter = number of vertices
         self.tool.setAction(self.actions[3])
-        self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
+        self.tool.selectionDone.connect(self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Maintain the left click to draw a circle. Simple Left click to give a perimeter.'))
     
@@ -226,7 +226,7 @@ class Qgeric:
         self.request = 'intersects'
         self.tool = selectPolygon(self.iface, self.themeColor, 1)
         self.tool.setAction(self.actions[4])
-        self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
+        self.tool.selectionDone.connect(self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Left click to place points. Right click to confirm.'))
         
@@ -244,7 +244,7 @@ class Qgeric:
         self.actions[5].menu().actions()[0].triggered.disconnect()
         self.actions[5].menu().actions()[0].triggered.connect(self.polygonBufferSelection)
         self.tool.setAction(self.actions[5])
-        self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
+        self.tool.selectionDone.connect(self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Select a vector layer in the Layer Tree, then left click on an attribute of this layer on the map.'))
         
@@ -262,20 +262,19 @@ class Qgeric:
         self.actions[5].menu().actions()[0].triggered.disconnect()
         self.actions[5].menu().actions()[0].triggered.connect(self.bufferSelection)
         self.tool.setAction(self.actions[5])
-        self.iface.connect(self.tool, SIGNAL("selectionDone()"), self.returnedBounds)
+        self.tool.selectionDone.connect(self.returnedBounds)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.sb.showMessage(self.tr('Left click to place points. Right click to confirm.'))
     
     def geomTransform(self, geom, crs_orig, crs_dest):
         g = QgsGeometry(geom)
-        crsTransform = QgsCoordinateTransform(crs_orig, crs_dest)
+        crsTransform = QgsCoordinateTransform(crs_orig, crs_dest, QgsProject().instance())
         g.transform(crsTransform)
         return g
     
     def returnedBounds(self):
         rb = self.tool.rb
-        legende = self.iface.legendInterface()
-        
+
         warning = True
         ok = True
         active = False
@@ -286,24 +285,24 @@ class Qgeric:
         buffer_geom_crs = None
         
         # we check if there's at least one visible layer
-        for layer in legende.layers():
-            if legende.isLayerVisible(layer):
+        for layer in QgsProject().instance().mapLayers().values():
+            if QgsProject.instance().layerTreeRoot().findLayer(layer.id()).isVisible():
                 warning = False
                 active = True
                 break
                 
         # buffer creation on the current layer
         if self.request == 'buffer':
-            layer = legende.currentLayer()
-            if layer is not None and layer.type() == QgsMapLayer.VectorLayer and legende.isLayerVisible(layer):
+            layer = self.iface.layerTreeView().currentLayer()
+            if layer is not None and layer.type() == QgsMapLayer.VectorLayer and QgsProject.instance().layerTreeRoot().findLayer(layer.id()).isVisible():
                 # rubberband reprojection
-                g = self.geomTransform(rb.asGeometry(), self.iface.mapCanvas().mapRenderer().destinationCrs(), layer.crs())
+                g = self.geomTransform(rb.asGeometry(), self.iface.mapCanvas().mapSettings().destinationCrs(), layer.crs())
                 features = layer.getFeatures(QgsFeatureRequest(g.boundingBox()))
                 rbGeom = []
                 for feature in features:
                     geom = feature.geometry()
                     if g.intersects(geom):
-                        rbGeom.append(feature.geometryAndOwnership())
+                        rbGeom.append(QgsGeometry(feature.geometry()))
                 if len(rbGeom) > 0:
                     union_geoms = rbGeom[0]
                     for geometry in rbGeom:
@@ -326,19 +325,18 @@ class Qgeric:
             else:
                 warning = True
                         
-        if len(legende.layers()) > 0 and warning == False and ok:
-            layermaps = QgsMapLayerRegistry.instance().mapLayers()
+        if len(QgsProject().instance().mapLayers().values()) > 0 and warning == False and ok:
             self.loadingWindow.show()
             self.loadingWindow.activateWindow();
             self.loadingWindow.showNormal();
-            for name, layer in layermaps.iteritems():
-                if layer.type() == QgsMapLayer.VectorLayer and legende.isLayerVisible(layer):
-                    if self.request == 'buffer' and self.iface.legendInterface().currentLayer() == layer:
-                        layer.setSelectedFeatures([])
+            for layer in QgsProject().instance().mapLayers().values():
+                if layer.type() == QgsMapLayer.VectorLayer and QgsProject.instance().layerTreeRoot().findLayer(layer.id()).isVisible():
+                    if self.request == 'buffer' and self.iface.layerTreeView().currentLayer() == layer:
+                        layer.selectByIds([])
                         continue
                     self.loadingWindow.reset()
                     self.loadingWindow.setWindowTitle(self.tr('Selecting...'))
-                    self.loadingWindow.setLabelText(name)
+                    self.loadingWindow.setLabelText(layer.name())
                     
                     # rubberband reprojection
                     if self.request == 'buffer':
@@ -347,7 +345,7 @@ class Qgeric:
                         else:
                             g = self.geomTransform(buffer_geom, buffer_geom_crs, layer.crs())
                     else:
-                        g = self.geomTransform(rb.asGeometry(), self.iface.mapCanvas().mapRenderer().destinationCrs(), layer.crs())
+                        g = self.geomTransform(rb.asGeometry(), self.iface.mapCanvas().mapSettings().destinationCrs(), layer.crs())
                     
                     feat_id = []
                     features = layer.getFeatures(QgsFeatureRequest(g.boundingBox()))
@@ -366,7 +364,7 @@ class Qgeric:
                                 feat_id.append(feature.id())
                         except:
                             # There's an error but it intersects
-                            print 'error with '+name+' on '+str(feature.id())
+                            print('error with '+layer.name()+' on '+str(feature.id()))
                             feat_id.append(feature.id())
                         index += 1
                         self.loadingWindow.setValue(int((float(index)/nbfeatures)*100))
@@ -374,19 +372,19 @@ class Qgeric:
                             self.loadingWindow.reset()
                             break
                         QApplication.processEvents()
-                    layer.setSelectedFeatures(feat_id)
+                    layer.selectByIds(feat_id)
             
             self.loadingWindow.close()
             self.showAttributesTable()
         else:
             # Display a warning in the message bar depending of the error
             if active == False:
-                self.iface.messageBar().pushMessage(self.tr('Warning'), self.tr('There is no active layer !'), level=QgsMessageBar.WARNING, duration=3)
+                self.iface.messageBar().pushWarning(self.tr('Warning'), self.tr('There is no active layer !'))
             elif ok == False:
                 pass
             elif errBuffer_noAtt:
-                self.iface.messageBar().pushMessage(self.tr('Warning'), self.tr('You didn\'t click on a layer\'s attribute !'), level=QgsMessageBar.WARNING, duration=3)
+                self.iface.messageBar().pushWarning(self.tr('Warning'), self.tr('You didn\'t click on a layer\'s attribute !'))
             elif errBuffer_Vertices:
-                self.iface.messageBar().pushMessage(self.tr('Warning'), self.tr('You must give a non-null value for a point\'s or line\'s perimeter !'), level=QgsMessageBar.WARNING, duration=3)
+                self.iface.messageBar().pushWarning(self.tr('Warning'), self.tr('You must give a non-null value for a point\'s or line\'s perimeter !'))
             else:
-                self.iface.messageBar().pushMessage(self.tr('Warning'), self.tr('There is no selected layer, or it is not vector nor visible !'), level=QgsMessageBar.WARNING, duration=3)
+                self.iface.messageBar().pushWarning(self.tr('Warning'), self.tr('There is no selected layer, or it is not vector nor visible !'))

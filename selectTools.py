@@ -2,20 +2,21 @@
 
 # Mostly comes from Cadre de permanence by Médéric RIBREUX
 
-from qgis.core import *
-from qgis.gui import *
-from math import *
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from qgis.core import QgsWkbTypes, QgsPointXY
+from qgis.gui import QgsMapTool, QgsMapToolEmitPoint, QgsRubberBand
+from math import cos, sin, sqrt, pi
+from qgis.PyQt.QtCore import Qt, QPoint, QCoreApplication, QSettings, pyqtSignal
+from qgis.PyQt.QtWidgets import QInputDialog
 
 class selectRect(QgsMapTool):
   '''Classe de sélection avec un Rectangle'''
+  selectionDone = pyqtSignal()
   def __init__(self, iface, couleur, largeur):
       self.canvas = iface.mapCanvas()
       QgsMapToolEmitPoint.__init__(self, self.canvas)
 
       self.iface = iface
-      self.rb=QgsRubberBand(self.canvas,QGis.Polygon)
+      self.rb=QgsRubberBand(self.canvas,QgsWkbTypes.PolygonGeometry)
       self.rb.setColor( couleur )
       self.rb.setWidth( largeur )
       self.reset()
@@ -39,7 +40,7 @@ class selectRect(QgsMapTool):
       if not e.button() == Qt.LeftButton:
           return None
       if self.rb.numberOfVertices() > 3:
-        self.emit( SIGNAL("selectionDone()") )
+        self.selectionDone.emit()
       return None
 
   def canvasMoveEvent(self, e):
@@ -49,14 +50,14 @@ class selectRect(QgsMapTool):
       self.showRect(self.startPoint, self.endPoint)
 
   def showRect(self, startPoint, endPoint):
-      self.rb.reset(QGis.Polygon)	# true, it's a polygon
+      self.rb.reset(QgsWkbTypes.PolygonGeometry)	# true, it's a polygon
       if startPoint.x() == endPoint.x() or startPoint.y() == endPoint.y():
         return
 
-      point1 = QgsPoint(startPoint.x(), startPoint.y())
-      point2 = QgsPoint(startPoint.x(), endPoint.y())
-      point3 = QgsPoint(endPoint.x(), endPoint.y())
-      point4 = QgsPoint(endPoint.x(), startPoint.y())
+      point1 = QgsPointXY(startPoint.x(), startPoint.y())
+      point2 = QgsPointXY(startPoint.x(), endPoint.y())
+      point3 = QgsPointXY(endPoint.x(), endPoint.y())
+      point4 = QgsPointXY(endPoint.x(), startPoint.y())
 
       self.rb.addPoint( point1, False )
       self.rb.addPoint( point2, False )
@@ -70,13 +71,14 @@ class selectRect(QgsMapTool):
 
 class selectPolygon(QgsMapTool):
   '''Outil de sélection par polygone, tiré de selectPlusFr'''
+  selectionDone = pyqtSignal()
   def __init__(self,iface, couleur, largeur):
       canvas = iface.mapCanvas()
       QgsMapTool.__init__(self,canvas)
       self.canvas = canvas
       self.iface = iface
       self.status = 0
-      self.rb=QgsRubberBand(self.canvas,QGis.Polygon)
+      self.rb=QgsRubberBand(self.canvas,QgsWkbTypes.PolygonGeometry)
       self.rb.setColor( couleur )
       self.rb.setWidth( largeur )
       return None
@@ -89,13 +91,13 @@ class selectPolygon(QgsMapTool):
   def canvasPressEvent(self,e):
       if e.button() == Qt.LeftButton:
          if self.status == 0:
-           self.rb.reset( QGis.Polygon )
+           self.rb.reset( QgsWkbTypes.PolygonGeometry )
            self.status = 1
          self.rb.addPoint(self.toMapCoordinates(e.pos()))
       else:
          if self.rb.numberOfVertices() > 2:
            self.status = 0
-           self.emit( SIGNAL("selectionDone()") )
+           self.selectionDone.emit()
          else:
            self.reset()
       return None
@@ -116,6 +118,7 @@ class selectPolygon(QgsMapTool):
 
 class selectCircle(QgsMapTool):
   '''Outil de sélection par cercle, tiré de selectPlusFr'''
+  selectionDone = pyqtSignal()
   def __init__(self,iface, couleur, largeur, cercle):
       canvas = iface.mapCanvas()
       QgsMapTool.__init__(self,canvas)
@@ -123,7 +126,7 @@ class selectCircle(QgsMapTool):
       self.iface = iface
       self.status = 0
       self.cercle = cercle
-      self.rb=QgsRubberBand(self.canvas,QGis.Polygon)
+      self.rb=QgsRubberBand(self.canvas,QgsWkbTypes.PolygonGeometry)
       self.rb.setColor( couleur )
       self.rb.setWidth( largeur )
       return None
@@ -153,7 +156,7 @@ class selectCircle(QgsMapTool):
           return None
       self.status = 0
       if self.rb.numberOfVertices() > 3:
-        self.emit( SIGNAL("selectionDone()") )
+        self.selectionDone.emit()
       else:
         radius, ok = QInputDialog.getDouble(self.iface.mainWindow(), self.tr('Radius'), self.tr('Give a radius in m:'), min=0)
         if ok:
@@ -161,7 +164,7 @@ class selectCircle(QgsMapTool):
             cp.setX(cp.x()+radius)
             rbcircle(self.rb, self.toMapCoordinates(e.pos()), cp, self.cercle)
             self.rb.show()
-            self.emit( SIGNAL("selectionDone()") )
+            self.selectionDone.emit()
       return None
 
   def reset(self):
@@ -175,21 +178,22 @@ class selectCircle(QgsMapTool):
 def rbcircle(rb,center,edgePoint,N):
     '''Fonction qui affiche une rubberband sous forme de cercle'''
     r = sqrt(center.sqrDist(edgePoint))
-    rb.reset( QGis.Polygon )
+    rb.reset( QgsWkbTypes.PolygonGeometry )
     for itheta in range(N+1):
         theta = itheta*(2.0 * pi/N)
-        rb.addPoint(QgsPoint(center.x()+r*cos(theta),center.y()+r*sin(theta)))
+        rb.addPoint(QgsPointXY(center.x()+r*cos(theta),center.y()+r*sin(theta)))
     return 
     
 class selectLine(QgsMapTool):
   '''Outil de sélection par polygone, tiré de selectPlusFr'''
+  selectionDone = pyqtSignal()
   def __init__(self,iface, couleur, largeur):
       canvas = iface.mapCanvas()
       QgsMapTool.__init__(self,canvas)
       self.canvas = canvas
       self.iface = iface
       self.status = 0
-      self.rb=QgsRubberBand(self.canvas,QGis.Line)
+      self.rb=QgsRubberBand(self.canvas,QgsWkbTypes.LineGeometry)
       self.rb.setColor( couleur )
       self.rb.setWidth( largeur )
       return None
@@ -197,13 +201,13 @@ class selectLine(QgsMapTool):
   def canvasPressEvent(self,e):
       if e.button() == Qt.LeftButton:
          if self.status == 0:
-           self.rb.reset( QGis.Line )
+           self.rb.reset( QgsWkbTypes.LineGeometry )
            self.status = 1
          self.rb.addPoint(self.toMapCoordinates(e.pos()))
       else:
          if self.rb.numberOfVertices() > 2:
            self.status = 0
-           self.emit( SIGNAL("selectionDone()") )
+           self.selectionDone.emit()
          else:
            self.reset()
       return None
@@ -216,26 +220,27 @@ class selectLine(QgsMapTool):
 
   def reset(self):
       self.status = 0
-      self.rb.reset( QGis.Line )
+      self.rb.reset( QgsWkbTypes.LineGeometry )
 
   def deactivate(self):
-    self.rb.reset( QGis.Line )
+    self.rb.reset( QgsWkbTypes.LineGeometry )
     QgsMapTool.deactivate(self)
     
 class selectPoint(QgsMapTool):
   '''Outil de sélection par polygone, tiré de selectPlusFr'''
+  selectionDone = pyqtSignal()
   def __init__(self,iface, couleur):
       canvas = iface.mapCanvas()
       QgsMapTool.__init__(self,canvas)
       self.canvas = canvas
       self.iface = iface
-      self.rb=QgsRubberBand(self.canvas,QGis.Polygon)
+      self.rb=QgsRubberBand(self.canvas,QgsWkbTypes.PolygonGeometry)
       self.rb.setColor( couleur )
       return None
 
   def canvasReleaseEvent(self,e):
       if e.button() == Qt.LeftButton:
-         self.rb.reset( QGis.Polygon )
+         self.rb.reset( QgsWkbTypes.PolygonGeometry )
          cp = self.toMapCoordinates(QPoint(e.pos().x()-5, e.pos().y()-5))
          self.rb.addPoint(cp)
          cp = self.toMapCoordinates(QPoint(e.pos().x()+5, e.pos().y()-5))
@@ -244,12 +249,12 @@ class selectPoint(QgsMapTool):
          self.rb.addPoint(cp)
          cp = self.toMapCoordinates(QPoint(e.pos().x()-5, e.pos().y()+5))
          self.rb.addPoint(cp)
-         self.emit( SIGNAL("selectionDone()") )
+         self.selectionDone.emit()
       return None
 
   def reset(self):
-      self.rb.reset( QGis.Polygon )
+      self.rb.reset( QgsWkbTypes.PolygonGeometry )
 
   def deactivate(self):
-    self.rb.reset( QGis.Polygon )
+    self.rb.reset( QgsWkbTypes.PolygonGeometry )
     QgsMapTool.deactivate(self)

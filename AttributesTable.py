@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Qgeric: plugin that makes graphical queries easier.
+# Qgeric: Graphical queries by drawing simple shapes.
 # Author: Jérémy Kalsron
 #         jeremy.kalsron@gmail.com
 #
@@ -14,23 +14,27 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-#You should have received a copy of the GNU General Public License
-#along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, sys
-from PyQt4 import QtGui, QtCore
-from PyQt4.QtGui import QPushButton, QIcon, QTableWidgetItem, QFileDialog, QToolBar, QAction, QApplication, QColor, QHeaderView, QInputDialog, QComboBox, QLineEdit, QMenu, QWidgetAction, QMessageBox, QDateEdit, QTimeEdit, QDateTimeEdit
-from PyQt4.QtCore import Qt, QSize, QDate, QTime, QDateTime, QTranslator, SIGNAL, QCoreApplication, QVariant
-from qgis.core import *
-from qgis.gui import *
+from qgis.PyQt import QtGui, QtCore
+from qgis.PyQt.QtGui import QIcon, QColor
+from qgis.PyQt.QtCore import Qt, QSize, QDate, QTime, QDateTime, QTranslator, QCoreApplication, QVariant
+from qgis.PyQt.QtWidgets import (QWidget, QDesktopWidget, QTabWidget, QVBoxLayout, QProgressDialog, 
+                                QStatusBar, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog, 
+                                QToolBar, QAction, QApplication, QHeaderView, QInputDialog, QComboBox, 
+                                QLineEdit, QMenu, QWidgetAction, QMessageBox, QDateEdit, QTimeEdit, QDateTimeEdit)
+from qgis.core import QgsWkbTypes, QgsVectorLayer, QgsProject, QgsGeometry, QgsCoordinateTransform, QgsCoordinateReferenceSystem
+from qgis.gui import QgsMessageBar, QgsHighlight
 from functools import partial
-import odswriter as ods
-import resources
+from . import odswriter as ods
+from . import resources
 
 # Display and export attributes from all active layers
-class AttributesTable(QtGui.QWidget):
+class AttributesTable(QWidget):
     def __init__(self, iface):
-        QtGui.QWidget.__init__(self)
+        QWidget.__init__(self)
         
         self.setWindowTitle(self.tr('Search results'))
         self.resize(480,320)
@@ -51,19 +55,19 @@ class AttributesTable(QtGui.QWidget):
         self.btn_rename = QAction(QIcon(':/plugins/qgeric/resources/icon_Settings.png'), self.tr('Settings'), self)
         self.btn_rename.triggered.connect(self.renameWindow)
                 
-        self.tabWidget = QtGui.QTabWidget() # Tab container
+        self.tabWidget = QTabWidget() # Tab container
         self.tabWidget.setTabsClosable(True)
-        self.connect(self.tabWidget, SIGNAL("currentChanged(int)"), self.tabChanged)
-        self.connect(self.tabWidget, SIGNAL("tabCloseRequested(int)"), self.closeTab)
+        self.tabWidget.currentChanged.connect(self.tabChanged)
+        self.tabWidget.tabCloseRequested.connect(self.closeTab)
         
-        self.loadingWindow = QtGui.QProgressDialog()
+        self.loadingWindow = QProgressDialog()
         self.loadingWindow.setWindowTitle(self.tr('Loading...'))
         self.loadingWindow.setRange(0,100)
         self.loadingWindow.setAutoClose(False)
         self.loadingWindow.setCancelButton(None)
         
         self.canvas = iface.mapCanvas()
-        iface.connect(self.canvas, SIGNAL("extentsChanged()"), self.highlight_features)
+        self.canvas.extentsChanged.connect(self.highlight_features)
         self.highlight = []
         self.highlight_rows = []
         
@@ -77,7 +81,7 @@ class AttributesTable(QtGui.QWidget):
         toolbar.addAction(self.btn_selectGeom)
         toolbar.addAction(self.btn_rename)
 
-        vbox = QtGui.QVBoxLayout()
+        vbox = QVBoxLayout()
         vbox.setContentsMargins(0,0,0,0)
         vbox.addWidget(toolbar)
         vbox.addWidget(self.tabWidget)
@@ -113,13 +117,13 @@ class AttributesTable(QtGui.QWidget):
     def exportLayer(self):
         if self.tabWidget.count() != 0:
             index = self.tabWidget.currentIndex()
-            table = self.tabWidget.widget(index).findChildren(QtGui.QTableWidget)[0]
+            table = self.tabWidget.widget(index).findChildren(QTableWidget)[0]
             items = table.selectedItems()
             if len(items) > 0:
                 type = ''
-                if items[0].feature.geometry().type() == QGis.Point:
+                if items[0].feature.geometry().type() == QgsWkbTypes.PointGeometry:
                     type = 'Point'
-                elif items[0].feature.geometry().type() == QGis.Line:
+                elif items[0].feature.geometry().type() == QgsWkbTypes.LineGeometry:
                     type = 'LineString'
                 else:
                     type = 'Polygon'
@@ -137,9 +141,9 @@ class AttributesTable(QtGui.QWidget):
                     layer.dataProvider().addFeatures(features)
                     layer.dataProvider().addAttributes(features[0].fields().toList())
                     layer.commitChanges()
-                    QgsMapLayerRegistry.instance().addMapLayer(layer)
+                    QgsProject.instance().addMapLayer(layer)
             else:
-                self.mb.pushMessage(self.tr('Warning'), self.tr('There is no selected feature !'), level=QgsMessageBar.WARNING, duration=3)
+                self.mb.pushWarning(self.tr('Warning'), self.tr('There is no selected feature !'))
         
     def highlight_features(self):
         del self.highlight[:]
@@ -147,7 +151,7 @@ class AttributesTable(QtGui.QWidget):
         index = self.tabWidget.currentIndex()
         tab = self.tabWidget.widget(index)
         if self.tabWidget.count() != 0:
-            table = self.tabWidget.widget(index).findChildren(QtGui.QTableWidget)[0]
+            table = self.tabWidget.widget(index).findChildren(QTableWidget)[0]
             nb = 0
             area = 0
             length = 0
@@ -162,13 +166,13 @@ class AttributesTable(QtGui.QWidget):
                     self.highlight.append(highlight)
                     self.highlight_rows.append(item.row())
                     g = QgsGeometry(item.feature.geometry())
-                    g.transform(QgsCoordinateTransform(tab.layer.crs(), QgsCoordinateReferenceSystem(2154))) # geometry reprojection to get meters
+                    g.transform(QgsCoordinateTransform(tab.layer.crs(), QgsCoordinateReferenceSystem(2154), QgsProject.instance())) # geometry reprojection to get meters
                     nb += 1
                     area += g.area()
                     length += g.length()
-            if tab.layer.wkbType()==QGis.WKBPolygon:
+            if tab.layer.geometryType()==QgsWkbTypes.PolygonGeometry:
                 tab.sb.showMessage(self.tr('Selected features')+': '+str(nb)+'  '+self.tr('Area')+': '+"%.2f"%area+' m'+u'²')
-            elif tab.layer.wkbType()==QGis.WKBLineString:
+            elif tab.layer.geometryType()==QgsWkbTypes.LineGeometry:
                 tab.sb.showMessage(self.tr('Selected features')+': '+str(nb)+'  '+self.tr('Length')+': '+"%.2f"%length+' m')
             else:
                 tab.sb.showMessage(self.tr('Selected features')+': '+str(nb))
@@ -178,7 +182,7 @@ class AttributesTable(QtGui.QWidget):
         
     def zoomToFeature(self):
         index = self.tabWidget.currentIndex()
-        table = self.tabWidget.widget(index).findChildren(QtGui.QTableWidget)[0]
+        table = self.tabWidget.widget(index).findChildren(QTableWidget)[0]
         items = table.selectedItems()
         feat_id = []
         for item in items:
@@ -192,13 +196,13 @@ class AttributesTable(QtGui.QWidget):
     
     # Add a new tab
     def addLayer(self, layer, headers, types, features):
-        tab = QtGui.QWidget()
+        tab = QWidget()
         tab.layer = layer
-        p1_vertical = QtGui.QVBoxLayout(tab)
+        p1_vertical = QVBoxLayout(tab)
         p1_vertical.setContentsMargins(0,0,0,0)
         
-        table = QtGui.QTableWidget();
-        self.connect(table, SIGNAL("itemSelectionChanged()"), self.selectionChanged)
+        table = QTableWidget()
+        table.itemSelectionChanged.connect(self.selectionChanged)
         table.title = layer.name()
         table.crs = layer.crs()
         table.setColumnCount(len(headers))
@@ -207,8 +211,8 @@ class AttributesTable(QtGui.QWidget):
             nbrow = len(features)
             self.loadingWindow.show()
             self.loadingWindow.setLabelText(table.title)
-            self.loadingWindow.activateWindow();
-            self.loadingWindow.showNormal();
+            self.loadingWindow.activateWindow()
+            self.loadingWindow.showNormal()
             
             # Table population
             m = 0
@@ -229,7 +233,7 @@ class AttributesTable(QtGui.QWidget):
             table.setRowCount(0)  
                             
         table.setHorizontalHeaderLabels(headers)
-        table.horizontalHeader().setMovable(True)
+        table.horizontalHeader().setSectionsMovable(True)
         
         table.types = types
         table.filter_op = []
@@ -247,7 +251,7 @@ class AttributesTable(QtGui.QWidget):
         p1_vertical.addWidget(table)
         
         # Status bar to display informations (ie: area)
-        tab.sb = QtGui.QStatusBar()
+        tab.sb = QStatusBar()
         p1_vertical.addWidget(tab.sb)
         
         title = table.title
@@ -406,14 +410,14 @@ class AttributesTable(QtGui.QWidget):
     # Use odswriter library
     def saveAttributes(self, active):
         file = QFileDialog.getSaveFileName(self, self.tr('Save in...'),'', self.tr('OpenDocument Spreadsheet (*.ods)'))
-        if file:
+        if file[0]:
             try:
-                with ods.writer(open(file,"wb")) as odsfile:
+                with ods.writer(open(file[0],"wb")) as odsfile:
                     tabs = None
                     if active:
-                        tabs = self.tabWidget.currentWidget().findChildren(QtGui.QTableWidget)
+                        tabs = self.tabWidget.currentWidget().findChildren(QTableWidget)
                     else:
-                        tabs = self.tabWidget.findChildren(QtGui.QTableWidget)
+                        tabs = self.tabWidget.findChildren(QTableWidget)
                     for table in reversed(tabs):
                         sheet = odsfile.new_sheet(table.title[:20]+'...') # For each tab in the container, a new sheet is created
                         sheet.writerow([table.title]) # As the tab's title's lenght is limited, the full name of the layer is written in the first row
@@ -439,13 +443,13 @@ class AttributesTable(QtGui.QWidget):
                 return False
     
     def center(self):
-        screen = QtGui.QDesktopWidget().screenGeometry()
+        screen = QDesktopWidget().screenGeometry()
         size = self.geometry()
         self.move((screen.width()-size.width())/2, (screen.height()-size.height())/2)
         
     def clear(self):
         self.tabWidget.clear()
-        for table in self.tabWidget.findChildren(QtGui.QTableWidget):
+        for table in self.tabWidget.findChildren(QTableWidget):
             table.setParent(None)
         
     def closeEvent(self, e):
