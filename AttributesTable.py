@@ -43,9 +43,9 @@ class AttributesTable(QWidget):
         
         # Results export button
         self.btn_saveTab = QAction(QIcon(':/plugins/qgeric/resources/icon_save.png'), self.tr('Save this tab\'s results'), self)
-        self.btn_saveTab.triggered.connect(self.handler_saveAttributes)
+        self.btn_saveTab.triggered.connect(lambda : self.saveAttributes(True))
         self.btn_saveAllTabs = QAction(QIcon(':/plugins/qgeric/resources/icon_saveAll.png'), self.tr('Save all results'), self)
-        self.btn_saveAllTabs.triggered.connect(self.handler_saveAllAttributes)
+        self.btn_saveAllTabs.triggered.connect(lambda : self.saveAttributes(False))
         self.btn_export = QAction(QIcon(':/plugins/qgeric/resources/icon_export.png'), self.tr('Export the selection as a memory layer'), self)
         self.btn_export.triggered.connect(self.exportLayer)
         self.btn_zoom = QAction(QIcon(':/plugins/qgeric/resources/icon_Zoom.png'), self.tr('Zoom to selected attributes'), self)
@@ -57,7 +57,7 @@ class AttributesTable(QWidget):
                 
         self.tabWidget = QTabWidget() # Tab container
         self.tabWidget.setTabsClosable(True)
-        self.tabWidget.currentChanged.connect(self.tabChanged)
+        self.tabWidget.currentChanged.connect(self.highlight_features)
         self.tabWidget.tabCloseRequested.connect(self.closeTab)
         
         self.loadingWindow = QProgressDialog()
@@ -99,9 +99,6 @@ class AttributesTable(QWidget):
     def closeTab(self, index):
         self.tabWidget.widget(index).deleteLater()
         self.tabWidget.removeTab(index)
-        
-    def tabChanged(self, index):
-        self.highlight_features()
         
     def selectGeomChanged(self):
         if self.selectGeom:
@@ -202,7 +199,7 @@ class AttributesTable(QWidget):
         p1_vertical.setContentsMargins(0,0,0,0)
         
         table = QTableWidget()
-        table.itemSelectionChanged.connect(self.selectionChanged)
+        table.itemSelectionChanged.connect(self.highlight_features)
         table.title = layer.name()
         table.crs = layer.crs()
         table.setColumnCount(len(headers))
@@ -395,16 +392,6 @@ class AttributesTable(QWidget):
             title = title[:-1]
         title += '('+str(nb_elts)+')'
         self.tabWidget.setTabText(self.tabWidget.currentIndex(), title)
-        
-        
-    def selectionChanged(self):
-        self.highlight_features()
-        
-    def handler_saveAttributes(self):
-        self.saveAttributes(True)
-        
-    def handler_saveAllAttributes(self):
-        self.saveAttributes(False)
        
     # Save tables in OpenDocument format
     # Use odswriter library
@@ -465,6 +452,3 @@ class AttributesTable(QWidget):
             e.accept()
         else:
             e.ignore()
-        
-    def closeLoading(self):
-        self.loadingWindow.close()

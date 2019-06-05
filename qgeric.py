@@ -180,7 +180,7 @@ class Qgeric:
                 if len(cells) != 0:
                     tab.addLayer(layer, fields_name, fields_type, cells)
                     
-        tab.closeLoading()
+        tab.loadingWindow.close()
         tab.show()
         tab.activateWindow();
         tab.showNormal();
