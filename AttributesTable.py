@@ -135,8 +135,8 @@ class AttributesTable(QWidget):
                 if ok:
                     layer = QgsVectorLayer(type+"?crs="+table.crs.authid(),name,"memory")
                     layer.startEditing()
-                    layer.dataProvider().addFeatures(features)
                     layer.dataProvider().addAttributes(features[0].fields().toList())
+                    layer.dataProvider().addFeatures(features)
                     layer.commitChanges()
                     QgsProject.instance().addMapLayer(layer)
             else:
