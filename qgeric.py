@@ -181,9 +181,11 @@ class Qgeric:
                     tab.addLayer(layer, fields_name, fields_type, cells)
                     
         tab.loadingWindow.close()
+        '''
         tab.show()
         tab.activateWindow();
         tab.showNormal();
+        '''
         
         self.results.append(tab)
     

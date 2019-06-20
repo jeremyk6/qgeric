@@ -21,7 +21,7 @@ import os, sys
 from qgis.PyQt import QtGui, QtCore
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import Qt, QSize, QDate, QTime, QDateTime, QTranslator, QCoreApplication, QVariant
-from qgis.PyQt.QtWidgets import (QWidget, QDesktopWidget, QTabWidget, QVBoxLayout, QProgressDialog, 
+from qgis.PyQt.QtWidgets import (QDockWidget, QWidget, QDesktopWidget, QTabWidget, QVBoxLayout, QProgressDialog, 
                                 QStatusBar, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog, 
                                 QToolBar, QAction, QApplication, QHeaderView, QInputDialog, QComboBox, 
                                 QLineEdit, QMenu, QWidgetAction, QMessageBox, QDateEdit, QTimeEdit, QDateTimeEdit)
@@ -32,9 +32,9 @@ from . import odswriter as ods
 from . import resources
 
 # Display and export attributes from all active layers
-class AttributesTable(QWidget):
+class AttributesTable(QDockWidget):
     def __init__(self, iface):
-        QWidget.__init__(self)
+        QDockWidget.__init__(self)
         
         self.setWindowTitle(self.tr('Search results'))
         self.resize(480,320)
@@ -85,11 +85,18 @@ class AttributesTable(QWidget):
         vbox.setContentsMargins(0,0,0,0)
         vbox.addWidget(toolbar)
         vbox.addWidget(self.tabWidget)
-        self.setLayout(vbox)
+
+        container = QWidget()
+        container.setLayout(vbox)
         
+        self.iface = iface
         self.mb = iface.messageBar()
         
         self.selectGeom = False # False for point, True for geometry
+        self.setWidget(container)
+
+        iface.addDockWidget(Qt.BottomDockWidgetArea, self)
+
 
     def renameWindow(self):
         title, ok = QInputDialog.getText(self, self.tr('Rename window'), self.tr('Enter a new title:'))  
@@ -97,9 +104,12 @@ class AttributesTable(QWidget):
             self.setWindowTitle(title)
             
     def closeTab(self, index):
-        self.tabWidget.widget(index).deleteLater()
-        self.tabWidget.removeTab(index)
-        
+        if self.tabWidget.count() == 1:
+            self.closeEvent()
+        else:
+            self.tabWidget.widget(index).deleteLater()
+            self.tabWidget.removeTab(index)
+
     def selectGeomChanged(self):
         if self.selectGeom:
             self.selectGeom = False
@@ -439,16 +449,18 @@ class AttributesTable(QWidget):
         for table in self.tabWidget.findChildren(QTableWidget):
             table.setParent(None)
         
-    def closeEvent(self, e):
+    def closeEvent(self, e=None):
         result = QMessageBox.question(self, self.tr("Saving ?"), self.tr("Would you like to save results before exit ?"), buttons = QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
         if result == QMessageBox.Yes:
             if self.saveAttributes(False):
                 self.clear()
-                e.accept()
+                if e : e.accept()
+                self.iface.removeDockWidget(self)
             else:
-                e.ignore()
+                if e : e.ignore()
         elif result == QMessageBox.No:
             self.clear()
-            e.accept()
+            if e : e.accept()
+            self.iface.removeDockWidget(self)
         else:
-            e.ignore()
+            if e : e.ignore()
