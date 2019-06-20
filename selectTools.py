@@ -7,6 +7,7 @@ from qgis.gui import QgsMapTool, QgsMapToolEmitPoint, QgsRubberBand
 from math import cos, sin, sqrt, pi
 from qgis.PyQt.QtCore import Qt, QPoint, QCoreApplication, QSettings, pyqtSignal
 from qgis.PyQt.QtWidgets import QInputDialog
+from qgis.PyQt.QtGui import QKeySequence
 
 class selectRect(QgsMapTool):
   '''Classe de sélection avec un Rectangle'''
