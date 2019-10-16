@@ -49,8 +49,6 @@ class Qgeric:
         self.sb = self.iface.mainWindow().statusBar()
         self.tool = None
 
-        self.results = []
-
         self.actions = []
         self.menu = '&Qgeric'
         self.toolbar = self.iface.addToolBar('Qgeric')
@@ -182,13 +180,8 @@ class Qgeric:
                     
         tab.loadingWindow.close()
         tab.show()
-        tab.activateWindow();
-        tab.showNormal();
-        
-        self.results.append(tab)
-    
-    def closeAttributesTable(self, tab):
-        self.results.remove(tab)
+        tab.activateWindow()
+        tab.showNormal()
     
     def pointSelection(self):
         if self.tool:

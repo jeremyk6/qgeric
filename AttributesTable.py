@@ -434,21 +434,18 @@ class AttributesTable(QWidget):
         size = self.geometry()
         self.move((screen.width()-size.width())/2, (screen.height()-size.height())/2)
         
-    def clear(self):
-        self.tabWidget.clear()
-        for table in self.tabWidget.findChildren(QTableWidget):
-            table.setParent(None)
-        
     def closeEvent(self, e):
         result = QMessageBox.question(self, self.tr("Saving ?"), self.tr("Would you like to save results before exit ?"), buttons = QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
         if result == QMessageBox.Yes:
             if self.saveAttributes(False):
-                self.clear()
+                self.tabWidget.deleteLater()
+                self.deleteLater()
                 e.accept()
             else:
                 e.ignore()
         elif result == QMessageBox.No:
-            self.clear()
+            self.tabWidget.deleteLater()
+            self.deleteLater()
             e.accept()
         else:
             e.ignore()
