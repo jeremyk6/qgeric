@@ -143,6 +143,8 @@ class AttributesTable(QWidget):
                 self.mb.pushWarning(self.tr('Warning'), self.tr('There is no selected feature !'))
         
     def highlight_features(self):
+        for item in self.highlight:
+            self.canvas.scene().removeItem(item)
         del self.highlight[:]
         del self.highlight_rows[:]
         index = self.tabWidget.currentIndex()
@@ -154,12 +156,12 @@ class AttributesTable(QWidget):
             length = 0
             items = table.selectedItems()
             for item in items:
-                if self.selectGeom:
-                    highlight = QgsHighlight(self.canvas, item.feature.geometry(), self.tabWidget.widget(index).layer)
-                else:
-                    highlight = QgsHighlight(self.canvas, item.feature.geometry().centroid(), self.tabWidget.widget(index).layer)
-                highlight.setColor(QColor(255,0,0))
                 if item.row() not in self.highlight_rows:
+                    if self.selectGeom:
+                        highlight = QgsHighlight(self.canvas, item.feature.geometry(), self.tabWidget.widget(index).layer)
+                    else:
+                        highlight = QgsHighlight(self.canvas, item.feature.geometry().centroid(), self.tabWidget.widget(index).layer)
+                    highlight.setColor(QColor(255,0,0))
                     self.highlight.append(highlight)
                     self.highlight_rows.append(item.row())
                     g = QgsGeometry(item.feature.geometry())
