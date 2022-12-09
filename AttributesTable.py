@@ -1,9 +1,10 @@
-# -*- coding: utf-8 -*-
-
 # Qgeric: Graphical queries by drawing simple shapes.
 # Author: Jérémy Kalsron
 #         jeremy.kalsron@gmail.com
-#
+
+# Adds : Francois Thevand
+#        francois.thevand@gmail.com
+
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -21,12 +22,14 @@ import os, sys
 from qgis.PyQt import QtGui, QtCore
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import Qt, QSize, QDate, QTime, QDateTime, QTranslator, QCoreApplication, QVariant
+
 from qgis.PyQt.QtWidgets import (QWidget, QDesktopWidget, QTabWidget, QVBoxLayout, QProgressDialog, 
                                 QStatusBar, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog, 
                                 QToolBar, QAction, QApplication, QHeaderView, QInputDialog, QComboBox, 
                                 QLineEdit, QMenu, QWidgetAction, QMessageBox, QDateEdit, QTimeEdit, QDateTimeEdit)
-from qgis.core import QgsWkbTypes, QgsVectorLayer, QgsProject, QgsGeometry, QgsCoordinateTransform, QgsCoordinateReferenceSystem
+from qgis.core import QgsWkbTypes, QgsVectorLayer, QgsProject, QgsLayerTreeGroup, QgsGeometry, QgsCoordinateTransform, QgsCoordinateReferenceSystem
 from qgis.gui import QgsMessageBar, QgsHighlight
+from qgis.utils import *
 from functools import partial
 from . import odswriter as ods
 from . import resources
@@ -65,7 +68,10 @@ class AttributesTable(QWidget):
         self.loadingWindow.setRange(0,100)
         self.loadingWindow.setAutoClose(False)
         self.loadingWindow.setCancelButton(None)
-        
+
+        self.project = QgsProject.instance()
+        self.root = self.project.layerTreeRoot()
+
         self.canvas = iface.mapCanvas()
         self.canvas.extentsChanged.connect(self.highlight_features)
         self.highlight = []
@@ -112,6 +118,7 @@ class AttributesTable(QWidget):
         self.highlight_features()
 
     def exportLayer(self):
+
         if self.tabWidget.count() != 0:
             index = self.tabWidget.currentIndex()
             table = self.tabWidget.widget(index).findChildren(QTableWidget)[0]
@@ -138,7 +145,15 @@ class AttributesTable(QWidget):
                     layer.dataProvider().addAttributes(features[0].fields().toList())
                     layer.dataProvider().addFeatures(features)
                     layer.commitChanges()
-                    QgsProject.instance().addMapLayer(layer)
+                    if self.project.layerTreeRoot().findGroup(self.tr('Extracts')) is None:
+                        self.project.layerTreeRoot().insertChildNode(0, QgsLayerTreeGroup(self.tr('Extracts')))
+                    group = self.project.layerTreeRoot().findGroup(self.tr('Extracts'))
+                    self.project.addMapLayer(layer, False)
+                    iface.layerTreeView().refreshLayerSymbology(layer.id())
+                    iface.mapCanvas().refresh()
+                    group.insertLayer(0, layer)
+                    group.setExpanded(True)
+
             else:
                 self.mb.pushWarning(self.tr('Warning'), self.tr('There is no selected feature !'))
         
@@ -398,7 +413,9 @@ class AttributesTable(QWidget):
     # Save tables in OpenDocument format
     # Use odswriter library
     def saveAttributes(self, active):
-        file = QFileDialog.getSaveFileName(self, self.tr('Save in...'),'', self.tr('OpenDocument Spreadsheet (*.ods)'))
+        # Création d'un sous-dossier "Extractions" dans le dossier contenant le projet
+        os.makedirs(self.project.homePath() + '/Extractions', exist_ok=True)
+        file = QFileDialog.getSaveFileName(self, self.tr('Save in...'),self.project.homePath() + '/Extractions', self.tr('OpenDocument Spreadsheet (*.ods)'))
         if file[0]:
             try:
                 with ods.writer(open(file[0],"wb")) as odsfile:
