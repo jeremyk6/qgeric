@@ -3,7 +3,9 @@
 # Qgeric: Graphical queries by drawing simple shapes.
 # Author: Jérémy Kalsron
 #         jeremy.kalsron@gmail.com
-#
+# Adds : Francois Thevand
+#        francois.thevand@gmail.com
+
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -181,6 +183,7 @@ class Qgeric:
                     tab.addLayer(layer, fields_name, fields_type, cells)
                     
         tab.loadingWindow.close()
+        tab.setWindowFlags(Qt.WindowStaysOnTopHint)
         tab.show()
         tab.activateWindow();
         tab.showNormal();
@@ -376,6 +379,14 @@ class Qgeric:
             
             self.loadingWindow.close()
             self.showAttributesTable()
+            # Pour épurer l'affichage, déselection de toutes les entités sélectionnées
+            # (évite les grandes zone jaunes)
+            root = QgsProject.instance().layerTreeRoot()
+            for checked_layers in root.checkedLayers():
+                try:
+                    checked_layers.removeSelection()
+                except:
+                    pass
         else:
             # Display a warning in the message bar depending of the error
             if active == False:
