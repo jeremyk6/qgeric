@@ -3,12 +3,14 @@ name=Qgeric
 qgisMinimumVersion=3.0
 description=Graphical queries by drawing simple shapes
 description[fr]=Interrogations graphiques par dessin de formes simples
-version=1.91
+version=1.95
 author=Jérémy Kalsron
 email=jeremy.kalsron@gmail.com
 
 about=Plugin that makes graphical queries by drawing simple shapes (rectangle, circle, buffer, etc.). All visible layers will be queried and the result will be displayed in a simplified attributes table with one tab per layer. This table enables features highlighting, results export (in OpenDocument format or as a memory layer), sorting and simple filters (on numbers, strings or dates by right clicking on a column header).
-about[fr]=Ce plugin permet les interrogations graphiques par dessin de formes simples (rectangle, cercle, tampon, etc.). Toutes les couches visibles seront interrogées et le résultat sera affiché dans une table attributaire simplifiée avec un onglet par couche. Cette table permet de mettre en surbrillance des entités, d'exporter les résultats (au format OpenDocument ou en couche mémoire), de trier et d'effectuer des filtres simples (sur des nombres, des chaînes ou des dates en effectuant un clic droit sur une en-tête de colonne).
+about[fr]=Ce plugin permet les interrogations graphiques par dessin de formes simples (rectangle, cercle, tampon, etc.). Toutes les couches visibles seront interrogées et le résultat sera affiché dans une table attributaire simplifiée avec un onglet par couche. Cette table permet de mettre en surbrillance des entités, d'exporter les résultats (au format OpenDocument ou en couche mémoire), de trier et d'effectuer des filtres simples (sur des nombres, des chaînes ou des dates en effectuant un clic droit sur une en-tête de colonne). Version 2.0 par François Thévand, d'après le code de la version 1.91 de Jéremy Kalsron
+changelog=1.95 par François Thévand : prise en compte de la configuration d'affichage des colonnes attributaires, maintien du format numérique des données chiffrées dans les exportations ods, maintien permanent au premier plan de la fenêtre des résultats de sélection, suppression des sélections dans la fenêtre carte, enregistrement des couches mémoire dans un groupe Extractions, enregistrement par défaut des ods dans un sous-dossier Extractions du dossier contenant le projet.
+1.91 correction d'un bug dans la mise en évidence des items sélectionnés
 
 homepage=https://github.com/jeremyk6/qgeric
 tracker=https://github.com/jeremyk6/qgeric/issues
