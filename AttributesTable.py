@@ -3,7 +3,8 @@
 # Qgeric: Graphical queries by drawing simple shapes.
 # Author: Jérémy Kalsron
 #         jeremy.kalsron@gmail.com
-#
+# Contributor : François Thévand
+#         francois.thevand@gmail.com
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -18,18 +19,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, sys
+from qgis import utils
 from qgis.PyQt import QtGui, QtCore
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import Qt, QSize, QDate, QTime, QDateTime, QTranslator, QCoreApplication, QVariant
-from qgis.PyQt.QtWidgets import (QWidget, QDesktopWidget, QTabWidget, QVBoxLayout, QProgressDialog, 
-                                QStatusBar, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog, 
-                                QToolBar, QAction, QApplication, QHeaderView, QInputDialog, QComboBox, 
+from qgis.PyQt.QtWidgets import (QWidget, QDesktopWidget, QTabWidget, QVBoxLayout, QProgressDialog,
+                                QStatusBar, QPushButton, QTableWidget, QTableWidgetItem, QFileDialog,
+                                QToolBar, QAction, QApplication, QHeaderView, QInputDialog, QComboBox,
                                 QLineEdit, QMenu, QWidgetAction, QMessageBox, QDateEdit, QTimeEdit, QDateTimeEdit)
 from qgis.core import QgsWkbTypes, QgsVectorLayer, QgsProject, QgsGeometry, QgsCoordinateTransform, QgsCoordinateReferenceSystem
 from qgis.gui import QgsMessageBar, QgsHighlight
 from functools import partial
 from . import odswriter as ods
 from . import resources
+from qgis.utils import *
 
 # Display and export attributes from all active layers
 class AttributesTable(QWidget):
@@ -65,7 +68,10 @@ class AttributesTable(QWidget):
         self.loadingWindow.setRange(0,100)
         self.loadingWindow.setAutoClose(False)
         self.loadingWindow.setCancelButton(None)
-        
+
+        self.project = QgsProject.instance()
+        self.root = self.project.layerTreeRoot()
+
         self.canvas = iface.mapCanvas()
         self.canvas.extentsChanged.connect(self.highlight_features)
         self.highlight = []
@@ -112,6 +118,7 @@ class AttributesTable(QWidget):
         self.highlight_features()
 
     def exportLayer(self):
+
         if self.tabWidget.count() != 0:
             index = self.tabWidget.currentIndex()
             table = self.tabWidget.widget(index).findChildren(QTableWidget)[0]
@@ -138,7 +145,15 @@ class AttributesTable(QWidget):
                     layer.dataProvider().addAttributes(features[0].fields().toList())
                     layer.dataProvider().addFeatures(features)
                     layer.commitChanges()
-                    QgsProject.instance().addMapLayer(layer)
+                    if self.project.layerTreeRoot().findGroup(self.tr('Extracts')) is None:
+                        self.project.layerTreeRoot().insertChildNode(0, QgsLayerTreeGroup(self.tr('Extracts')))
+                    group = self.project.layerTreeRoot().findGroup(self.tr('Extracts'))
+                    self.project.addMapLayer(layer, False)
+                    iface.layerTreeView().refreshLayerSymbology(layer.id())
+                    iface.mapCanvas().refresh()
+                    group.insertLayer(0, layer)
+                    group.setExpanded(True)
+
             else:
                 self.mb.pushWarning(self.tr('Warning'), self.tr('There is no selected feature !'))
         
@@ -194,7 +209,9 @@ class AttributesTable(QWidget):
         self.canvas.refresh() 
     
     # Add a new tab
-    def addLayer(self, layer, headers, types, features):
+
+    # Modification F. Thévand ajout paramètre visible :
+    def addLayer(self, layer, headers, types, features, visible):
         tab = QWidget()
         tab.layer = layer
         p1_vertical = QVBoxLayout(tab)
@@ -217,17 +234,29 @@ class AttributesTable(QWidget):
             m = 0
             for feature in features:
                 n = 0
-                for cell in feature.attributes():
+
+                # Ancienne syntaxe :
+                #                for cell in feature.attributes():
+                #                    item = QTableWidgetItem()
+                #                    item.setData(Qt.DisplayRole, cell)
+                #                    item.setFlags(item.flags() ^ Qt.ItemIsEditable)
+                #                    item.feature = feature
+                #                    table.setItem(m, n, item)
+                #                    n += 1
+
+                # Modification F. Thévand :
+                for idx in visible:
                     item = QTableWidgetItem()
-                    item.setData(Qt.DisplayRole, cell)
+                    item.setData(Qt.DisplayRole, feature[idx])
+                    # Fin modification
                     item.setFlags(item.flags() ^ Qt.ItemIsEditable)
                     item.feature = feature
                     table.setItem(m, n, item)
                     n += 1
                 m += 1
-                self.loadingWindow.setValue(int((float(m)/nbrow)*100))  
+                self.loadingWindow.setValue(int((float(m) / nbrow) * 100))
                 QApplication.processEvents()
-            
+
         else:
             table.setRowCount(0)  
                             
@@ -398,7 +427,9 @@ class AttributesTable(QWidget):
     # Save tables in OpenDocument format
     # Use odswriter library
     def saveAttributes(self, active):
-        file = QFileDialog.getSaveFileName(self, self.tr('Save in...'),'', self.tr('OpenDocument Spreadsheet (*.ods)'))
+        # Création d'un sous-dossier "Extractions" dans le dossier contenant le projet
+        os.makedirs(self.project.homePath() + '/Extractions', exist_ok=True)
+        file = QFileDialog.getSaveFileName(self, self.tr('Save in...'),self.project.homePath() + '/Extractions', self.tr('OpenDocument Spreadsheet (*.ods)'))
         if file[0]:
             try:
                 with ods.writer(open(file[0],"wb")) as odsfile:
