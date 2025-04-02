@@ -3,7 +3,7 @@ name=Qgeric
 qgisMinimumVersion=3.0
 description=Graphical queries by drawing simple shapes
 description[fr]=Interrogations graphiques par dessin de formes simples
-version=1.91
+version=1.92
 author=Jérémy Kalsron
 email=jeremy.kalsron@gmail.com
 
@@ -21,4 +21,3 @@ icon=icon.PNG
 
 experimental=False
 deprecated=False
-
