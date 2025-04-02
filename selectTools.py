@@ -26,7 +26,7 @@ class selectRect(QgsMapTool):
   def reset(self):
       self.startPoint = self.endPoint = None
       self.isEmittingPoint = False
-      self.rb.reset( True )	# true, its a polygon
+      self.rb.reset(QgsWkbTypes.PolygonGeometry)	# true, its a polygon
 
   def canvasPressEvent(self, e):
       if not e.button() == Qt.LeftButton:
@@ -67,7 +67,7 @@ class selectRect(QgsMapTool):
       self.rb.show()
 
   def deactivate(self):
-      self.rb.reset( True )
+      self.rb.reset(QgsWkbTypes.PolygonGeometry)
       QgsMapTool.deactivate(self)
 
 class selectPolygon(QgsMapTool):
@@ -102,7 +102,7 @@ class selectPolygon(QgsMapTool):
          else:
            self.reset()
       return None
-    
+
   def canvasMoveEvent(self,e):
       if self.rb.numberOfVertices() > 0 and self.status == 1:
           self.rb.removeLastPoint(0)
@@ -111,10 +111,10 @@ class selectPolygon(QgsMapTool):
 
   def reset(self):
       self.status = 0
-      self.rb.reset( True )
+      self.rb.reset(QgsWkbTypes.PolygonGeometry)
 
   def deactivate(self):
-    self.rb.reset( True )
+    self.rb.reset(QgsWkbTypes.PolygonGeometry)
     QgsMapTool.deactivate(self)
 
 class selectCircle(QgsMapTool):
@@ -131,7 +131,7 @@ class selectCircle(QgsMapTool):
       self.rb.setColor( couleur )
       self.rb.setWidth( largeur )
       return None
-  
+
   def tr(self, message):
         return QCoreApplication.translate('Qgeric', message)
 
@@ -142,7 +142,7 @@ class selectCircle(QgsMapTool):
       self.center = self.toMapCoordinates(e.pos())
       rbcircle(self.rb, self.center, self.center, self.cercle)
       return
-    
+
   def canvasMoveEvent(self,e):
       if not self.status == 1:
           return
@@ -170,10 +170,10 @@ class selectCircle(QgsMapTool):
 
   def reset(self):
       self.status = 0
-      self.rb.reset( True )
+      self.rb.reset(QgsWkbTypes.PolygonGeometry)
 
   def deactivate(self):
-    self.rb.reset( True )
+    self.rb.reset(QgsWkbTypes.PolygonGeometry)
     QgsMapTool.deactivate(self)
 
 def rbcircle(rb,center,edgePoint,N):
@@ -183,8 +183,8 @@ def rbcircle(rb,center,edgePoint,N):
     for itheta in range(N+1):
         theta = itheta*(2.0 * pi/N)
         rb.addPoint(QgsPointXY(center.x()+r*cos(theta),center.y()+r*sin(theta)))
-    return 
-    
+    return
+
 class selectLine(QgsMapTool):
   '''Outil de sélection par polygone, tiré de selectPlusFr'''
   selectionDone = pyqtSignal()
@@ -212,7 +212,7 @@ class selectLine(QgsMapTool):
          else:
            self.reset()
       return None
-    
+
   def canvasMoveEvent(self,e):
       if self.rb.numberOfVertices() > 0 and self.status == 1:
           self.rb.removeLastPoint(0)
@@ -226,7 +226,7 @@ class selectLine(QgsMapTool):
   def deactivate(self):
     self.rb.reset( QgsWkbTypes.LineGeometry )
     QgsMapTool.deactivate(self)
-    
+
 class selectPoint(QgsMapTool):
   '''Outil de sélection par polygone, tiré de selectPlusFr'''
   selectionDone = pyqtSignal()
