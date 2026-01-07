@@ -3,7 +3,9 @@
 # Qgeric: Graphical queries by drawing simple shapes.
 # Author: Jérémy Kalsron
 #         jeremy.kalsron@gmail.com
-#
+# Adds : Francois Thevand
+#        francois.thevand@gmail.com
+
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -21,12 +23,23 @@ from qgis.PyQt.QtCore import QTranslator, qVersion
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtWidgets import QAction, QApplication, QProgressDialog
 
-from . import resources
-
-from qgis.core import QgsProject, QgsMapLayer, QgsGeometry, QgsCoordinateTransform, QgsFeatureRequest, QgsVectorLayer
+# Modif F. THEVAND : ajout de la classe QgsAttributeTableConfig et QgsFields
+from qgis.core import (QgsProject,
+                                    QgsMapLayer,
+                                    QgsGeometry,
+                                    QgsCoordinateTransform,
+                                    QgsFeatureRequest,
+                                    QgsVectorLayer,
+                                    QgsAttributeTableConfig,
+                                    QgsFields)
 
 from .AttributesTable import *
 from .selectTools import *
+
+# Affichage messages info pour debugage
+def msg_inf(msg='',parent=None):
+    #Affiche un messagre d'info via Qt box"""
+    QMessageBox.information(parent, 'Information', '%s' % (msg))
 
 class Qgeric:
 
@@ -167,26 +180,35 @@ class Qgeric:
             parent=self.iface.mainWindow()
         )
 
-    def showAttributesTable(self):        
+    def showAttributesTable(self):
         tab = AttributesTable(self.iface)
 
         layers = QgsProject().instance().mapLayers().values()
 
         for layer in layers:
-            if layer.type() == QgsMapLayer.VectorLayer and QgsProject.instance().layerTreeRoot().findLayer(layer.id()).isVisible():
-                fields_name = [field.name() for field in layer.fields()]
-                fields_type = [field.type() for field in layer.fields()]
+            if layer.type() == QgsMapLayer.VectorLayer and QgsProject.instance().layerTreeRoot().findLayer(
+                    layer.id()).isVisible():
+
+                # Modification F Thévand
+                # pour prise en compte de la configuration du masquage des colonnes attributaires des couches
+                columns = layer.attributeTableConfig().columns()
+                for column in columns:
+                    fields_name = [column.name for column in columns if not column.hidden]
+                    fields_type = [column.type for column in columns if not column.hidden]
+                    idx_visible = [layer.fields().indexOf(column.name) for column in columns if not column.hidden]
+                #                    idx_masked = [layer.fields().indexOf(column.name) for column in columns if column.hidden]
+                # Fin modification
+
                 cells = layer.selectedFeatures()
                 if len(cells) != 0:
-                    tab.addLayer(layer, fields_name, fields_type, cells)
-                    
+                    tab.addLayer(layer, fields_name, fields_type, cells, idx_visible)
         tab.loadingWindow.close()
         tab.show()
         tab.activateWindow();
         tab.showNormal();
-        
+
         self.results.append(tab)
-    
+
     def closeAttributesTable(self, tab):
         self.results.remove(tab)
     
@@ -376,6 +398,14 @@ class Qgeric:
             
             self.loadingWindow.close()
             self.showAttributesTable()
+            # Pour épurer l'affichage, déselection de toutes les entités sélectionnées
+            # (évite les grandes zone jaunes)
+            root = QgsProject.instance().layerTreeRoot()
+            for checked_layers in root.checkedLayers():
+                try:
+                    checked_layers.removeSelection()
+                except:
+                    pass
         else:
             # Display a warning in the message bar depending of the error
             if active == False:
